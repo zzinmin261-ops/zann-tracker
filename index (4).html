@@ -1,0 +1,2317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Production Tracker</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#1d4ed8">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=IBM+Plex+Sans:wght@400;500;600;700;800&display=swap');
+
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#f0f4f8;
+  --bg2:#ffffff;
+  --bg3:#e8edf5;
+  --border:#dde3ec;
+  --border2:#c4cdd8;
+  --white:#111827;
+  --text:#111827;
+  --text2:#6b7280;
+  --m1:#1d4ed8;
+  --m1-light:#dbeafe;
+  --m1-glow:rgba(29,78,216,0.18);
+  --m2:#059669;
+  --m2-light:#d1fae5;
+  --m2-glow:rgba(5,150,105,0.18);
+  --amber:#d97706;
+  --amber-light:#fef3c7;
+  --red:#dc2626;
+  --red-light:#fee2e2;
+  --primary:#1d4ed8;
+}
+body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:72px}
+
+/* ── NAV ── */
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:#ffffff;border-top:1px solid var(--border);display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom)}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;padding:8px 4px 6px;border:none;background:transparent;color:var(--text2);font-size:11px;font-weight:700;cursor:pointer;gap:3px;font-family:inherit;letter-spacing:0.04em;text-transform:uppercase;transition:color .2s}
+.nav-item .icon{font-size:19px}
+.nav-item.active{color:var(--primary)}
+
+/* ── PAGE ── */
+.page{display:none}
+.page.active{display:block}
+
+/* ── HEADER ── */
+.page-header{background:var(--primary);border-bottom:1px solid var(--border);padding:14px 16px 12px;position:sticky;top:0;z-index:50}
+.page-header h2{font-size:18px;font-weight:800;color:#ffffff;letter-spacing:-0.02em}
+.page-header p{font-size:12px;color:rgba(255,255,255,0.75);margin-top:2px;font-family:'IBM Plex Mono',monospace}
+
+/* ── MACHINE TABS ── */
+.machine-tabs{display:flex;gap:0;background:var(--bg3);border-radius:10px;padding:3px;margin:12px 12px 0;border:1px solid var(--border)}
+.m-tab{flex:1;padding:10px 8px;border:none;border-radius:8px;background:transparent;font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;letter-spacing:0.02em;display:flex;flex-direction:column;align-items:center;gap:3px}
+.m-tab span{font-size:10px;font-weight:600;opacity:.7;font-family:'IBM Plex Mono',monospace}
+.m-tab.m1-active{background:var(--m1);color:white;box-shadow:0 2px 12px var(--m1-glow)}
+.m-tab.m2-active{background:var(--m2);color:white;box-shadow:0 2px 12px var(--m2-glow)}
+.m-tab:not(.m1-active):not(.m2-active):not(.both-active){color:var(--text2)}
+.m-tab.both-active{background:linear-gradient(90deg,var(--m1) 50%,var(--m2) 50%);color:white;font-weight:800}
+
+/* ── CONTENT ── */
+.content{padding:10px 12px}
+
+/* ── MACHINE BADGE ── */
+.badge-m1{background:var(--m1);color:white;border-radius:6px;padding:2px 8px;font-size:12px;font-weight:800;font-family:'IBM Plex Mono',monospace}
+.badge-m2{background:var(--m2);color:white;border-radius:6px;padding:2px 8px;font-size:12px;font-weight:800;font-family:'IBM Plex Mono',monospace}
+.badge-both{background:linear-gradient(90deg,var(--m1),var(--m2));color:white;border-radius:6px;padding:2px 8px;font-size:12px;font-weight:800;font-family:'IBM Plex Mono',monospace}
+
+/* ── CARD ── */
+.card{background:var(--bg2);border-radius:12px;border:1px solid var(--border);margin-bottom:10px;overflow:hidden}
+.card.m1-card{border-left:3px solid var(--m1)}
+.card.m2-card{border-left:3px solid var(--m2)}
+.card-header{padding:12px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border)}
+.card-body{padding:12px 14px}
+
+/* ── ORDER ITEM ── */
+.order-item{background:var(--bg2);border-radius:12px;border:1px solid var(--border);margin-bottom:8px;overflow:hidden}
+.order-item-header{padding:12px 14px;display:flex;justify-content:space-between;align-items:flex-start;cursor:pointer}
+.order-name{font-size:17px;font-weight:800;color:var(--text)}
+.order-sub{font-size:13px;color:var(--text2);margin-top:2px}
+.order-total{text-align:right;font-size:24px;font-weight:800;color:var(--primary);font-variant-numeric:tabular-nums;font-family:'IBM Plex Mono',monospace}
+.order-total-label{font-size:11px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+
+/* ── SIZE GRID ── */
+.size-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border-top:1px solid var(--border)}
+.size-cell{background:var(--bg2);padding:8px 4px;text-align:center}
+.size-label{font-size:11px;font-weight:700;color:var(--text2);font-family:'IBM Plex Mono',monospace}
+.size-qty{font-size:16px;font-weight:800;color:var(--text);font-variant-numeric:tabular-nums;font-family:'IBM Plex Mono',monospace}
+.size-m1{font-size:11px;color:var(--m1);font-weight:700}
+.size-m2{font-size:11px;color:var(--m2);font-weight:700}
+.size-bal{font-size:11px;color:var(--amber);font-weight:700}
+
+/* ── ORDER ACTIONS ── */
+.order-actions{display:flex;gap:6px;padding:8px 12px;border-top:1px solid var(--border);background:var(--bg3)}
+.btn-sm{flex:1;padding:8px;border-radius:8px;border:none;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity .15s}
+.btn-edit{background:var(--m1-light);color:var(--m1)}
+.btn-log-m1{background:var(--m1-light);color:var(--m1);border:1px solid var(--m1)}
+.btn-log-m2{background:var(--m2-light);color:var(--m2);border:1px solid var(--m2)}
+.btn-del{background:var(--red-light);color:var(--red)}
+
+/* ── FAB ── */
+.fab{position:fixed;bottom:82px;right:16px;width:52px;height:52px;border-radius:50%;border:none;font-size:24px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(0,0,0,.4);cursor:pointer;z-index:90;font-weight:700;transition:transform .15s}
+.fab:active{transform:scale(.92)}
+.fab-orders{background:var(--primary);color:white;box-shadow:0 4px 20px rgba(99,102,241,.4)}
+.fab-m1{background:var(--m1);color:white;box-shadow:0 4px 20px var(--m1-glow)}
+.fab-m2{background:var(--m2);color:white;box-shadow:0 4px 20px var(--m2-glow);bottom:144px}
+
+/* ── LOG ITEM ── */
+.log-item{background:var(--bg2);border-radius:10px;border:1px solid var(--border);margin-bottom:6px;padding:10px 12px;display:flex;justify-content:space-between;align-items:flex-start}
+.log-item.m1-item{border-left:3px solid var(--m1)}
+.log-item.m2-item{border-left:3px solid var(--m2)}
+.log-left .log-order{font-size:15px;font-weight:700;color:var(--text)}
+.log-left .log-detail{font-size:12px;color:var(--text2);margin-top:2px}
+.log-left .log-note{font-size:12px;color:var(--amber);margin-top:2px;font-style:italic}
+.log-right{text-align:right;flex-shrink:0;margin-left:8px}
+.log-qty{font-size:24px;font-weight:800;font-variant-numeric:tabular-nums;font-family:'IBM Plex Mono',monospace}
+.log-qty.m1{color:var(--m1)}
+.log-qty.m2{color:var(--m2)}
+.log-time{font-size:12px;color:var(--text2);font-family:'IBM Plex Mono',monospace}
+.log-delete{background:none;border:none;color:var(--red);font-size:16px;cursor:pointer;padding:2px 0;margin-top:2px;display:block;width:100%;text-align:right}
+
+/* ── STAT BOXES ── */
+.stat-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.stat-box{border-radius:12px;padding:12px 14px}
+.stat-box.m1{background:var(--m1-light);border:1px solid var(--m1)}
+.stat-box.m2{background:var(--m2-light);border:1px solid var(--m2)}
+.stat-box.total{background:var(--bg2);border:1px solid var(--border);grid-column:1/-1}
+.stat-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+.stat-label.m1{color:var(--m1)}
+.stat-label.m2{color:var(--m2)}
+.stat-label.tot{color:var(--text2)}
+.stat-val{font-size:28px;font-weight:800;font-variant-numeric:tabular-nums;font-family:'IBM Plex Mono',monospace;line-height:1}
+.stat-val.m1{color:var(--m1)}
+.stat-val.m2{color:var(--m2)}
+.stat-val.tot{color:var(--text)}
+.stat-sub{font-size:11px;color:var(--text2);margin-top:3px;font-family:'IBM Plex Mono',monospace}
+
+/* ── MODAL ── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;align-items:flex-end}
+.overlay.open{display:flex}
+.sheet{background:var(--bg2);border-radius:20px 20px 0 0;width:100%;max-height:92vh;overflow-y:auto;padding:0 0 30px}
+.sheet-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:10px auto 0}
+.sheet-title{font-size:17px;font-weight:800;color:var(--text);padding:14px 16px 12px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.sheet-body{padding:14px 16px}
+.sheet-close{background:var(--bg3);border:none;border-radius:8px;padding:5px 12px;font-size:13px;color:var(--text);font-weight:700;cursor:pointer;font-family:inherit}
+
+/* ── FORM ── */
+.field{margin-bottom:12px}
+.field label{display:block;font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px}
+.field input,.field select,.field textarea{width:100%;padding:11px 12px;border:1.5px solid var(--border2);border-radius:10px;font-size:16px;font-family:inherit;color:var(--text);background:var(--bg2);outline:none;-webkit-appearance:none}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--primary)}
+.field select option{background:var(--bg)}
+.field textarea{resize:none;min-height:60px;font-size:15px}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* ── SIZE INPUT GRID ── */
+.size-input-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.size-input-item label{font-size:12px;font-weight:700;color:var(--primary);display:block;margin-bottom:4px;font-family:'IBM Plex Mono',monospace}
+.size-input-item input{width:100%;padding:9px 8px;border:1.5px solid var(--border2);border-radius:8px;font-size:18px;text-align:center;font-weight:800;font-family:'IBM Plex Mono',monospace;background:var(--bg2);color:var(--text);outline:none;-webkit-appearance:none}
+.size-input-item input:focus{border-color:var(--primary)}
+
+/* ── BTN ── */
+.btn-primary{display:block;width:100%;padding:14px;background:var(--primary);color:white;border:none;border-radius:12px;font-size:16px;font-weight:800;font-family:inherit;cursor:pointer;margin-top:4px;letter-spacing:.02em}
+.btn-primary.m1{background:var(--m1)}
+.btn-primary.m2{background:var(--m2)}
+.btn-primary.amber{background:var(--amber);color:#000}
+
+/* ── MACHINE SELECTOR BUTTONS ── */
+.machine-select-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.msel-btn{padding:14px;border-radius:12px;border:2px solid var(--border2);background:var(--bg2);font-family:inherit;font-size:15px;font-weight:800;cursor:pointer;color:var(--text2);transition:all .2s;text-align:center}
+.msel-btn.active-m1{background:var(--m1);border-color:var(--m1);color:white;box-shadow:0 4px 16px var(--m1-glow)}
+.msel-btn.active-m2{background:var(--m2);border-color:var(--m2);color:white;box-shadow:0 4px 16px var(--m2-glow)}
+
+/* ── SIZE PICKER ── */
+.sz-btn{padding:8px 10px;border-radius:8px;border:2px solid var(--border2);background:var(--bg2);font-size:14px;font-weight:800;cursor:pointer;color:var(--text);font-family:'IBM Plex Mono',monospace;min-width:44px;text-align:center;transition:all .15s;line-height:1.3}
+.sz-btn.active-m1{background:var(--m1);border-color:var(--m1);color:white}
+.sz-btn.active-m2{background:var(--m2);border-color:var(--m2);color:white}
+.sz-btn.done{border-color:var(--text2);color:var(--text2)}
+
+/* ── SECTION LABEL ── */
+.section-label{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;padding-left:2px}
+
+/* ── DATE DIVIDER ── */
+.date-divider{display:flex;align-items:center;gap:8px;margin:12px 0 6px}
+.date-divider span{font-size:12px;font-weight:700;color:var(--text2);white-space:nowrap;font-family:'IBM Plex Mono',monospace}
+.date-divider hr{flex:1;border:none;border-top:1px solid var(--border)}
+
+/* ── EMPTY ── */
+.empty{text-align:center;padding:40px 20px;color:var(--text2);font-size:16px}
+.empty .emoji{font-size:36px;margin-bottom:8px}
+
+/* ── INFO BOX ── */
+.info-box{background:var(--amber-light);border:1px solid var(--amber);border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:14px;color:var(--amber);line-height:1.5}
+
+/* ── INNER TABS ── */
+.inner-tabs{display:flex;background:var(--bg3);border-radius:10px;padding:3px;margin-bottom:12px}
+.inner-tab{flex:1;padding:8px;border:none;border-radius:8px;background:transparent;font-family:inherit;font-size:13px;font-weight:700;color:var(--text2);cursor:pointer;transition:all .2s}
+.inner-tab.active{background:var(--bg2);color:var(--primary);box-shadow:0 1px 4px rgba(0,0,0,.15)}
+
+/* ── REPORT TABLE ── */
+.rep-table{width:100%;border-collapse:collapse;font-size:13px}
+.rep-table th{background:var(--bg3);padding:7px 8px;text-align:left;font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;border-bottom:1px solid var(--border);letter-spacing:.05em}
+.rep-table th.r{text-align:right}
+.rep-table td{padding:6px 8px;border-bottom:1px solid var(--border);font-variant-numeric:tabular-nums;font-family:'IBM Plex Mono',monospace}
+.rep-table td.r{text-align:right}
+.rep-table tfoot td{background:var(--bg3);font-weight:800;color:var(--text);border-top:2px solid var(--border2)}
+
+/* ── COMPARISON BAR ── */
+.comp-bar-wrap{margin-top:6px}
+.comp-bar{height:8px;border-radius:4px;overflow:hidden;background:var(--bg3);display:flex;gap:1px}
+.comp-bar-m1{background:var(--m1);border-radius:4px 0 0 4px;transition:width .4s}
+.comp-bar-m2{background:var(--m2);border-radius:0 4px 4px 0;transition:width .4s}
+
+/* ── BULK TABLE ── */
+.bulk-table-wrap{overflow-x:auto;margin-bottom:10px}
+.bulk-table{width:100%;border-collapse:collapse;font-size:13px}
+.bulk-table th{background:var(--bg3);padding:7px 6px;text-align:left;font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;border-bottom:1px solid var(--border);white-space:nowrap}
+.bulk-table td{padding:4px 4px;border-bottom:1px solid var(--border);vertical-align:middle}
+.bulk-table input,.bulk-table select{width:100%;padding:7px 6px;border:1.5px solid var(--border2);border-radius:7px;font-size:13px;font-family:inherit;color:var(--text);background:var(--bg2);outline:none;-webkit-appearance:none;min-width:70px}
+.bulk-table select option{background:var(--bg)}
+.bulk-table input:focus,.bulk-table select:focus{border-color:var(--primary)}
+.bulk-table .del-row{background:none;border:none;color:var(--red);font-size:16px;cursor:pointer;padding:4px 6px}
+.btn-add-row{background:var(--m1-light);color:var(--primary);border:1.5px dashed var(--primary);border-radius:8px;width:100%;padding:9px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:10px}
+.import-result{background:var(--m2-light);border:1px solid var(--m2);border-radius:10px;padding:10px 12px;font-size:14px;color:var(--m2);font-weight:700;display:none;margin-bottom:10px}
+
+/* ── ORDER INFO PREVIEW ── */
+.order-info-card{background:var(--m1-light);border:1.5px solid var(--m1);border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:14px}
+.oic-label{font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.08em}
+.oic-val{font-weight:800;color:var(--text);margin-top:2px;font-size:15px}
+
+/* ── PIN MODAL ── */
+.pin-input{width:100%;text-align:center;font-size:30px;font-weight:800;letter-spacing:8px;padding:14px;border:2px solid var(--border2);border-radius:14px;font-family:'IBM Plex Mono',monospace;background:var(--bg);color:var(--text);margin-bottom:10px}
+
+/* ── COLOR STRIPE ── */
+.order-color-stripe{height:4px;width:100%;border-radius:0}
+.order-item-header{position:relative}
+
+/* ── SEARCH BAR ── */
+.search-wrap{padding:10px 12px 0;position:sticky;top:56px;z-index:40;background:var(--bg)}
+.search-input{width:100%;padding:10px 14px 10px 38px;border:1.5px solid var(--border2);border-radius:12px;font-size:15px;font-family:inherit;color:var(--text);background:var(--bg2);outline:none;-webkit-appearance:none}
+.search-input:focus{border-color:var(--primary)}
+.search-wrap-inner{position:relative}
+.search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:16px;pointer-events:none}
+
+/* ── JSON IMPORT MODAL ── */
+.json-textarea{width:100%;min-height:160px;padding:10px 12px;border:1.5px solid var(--border2);border-radius:10px;font-size:13px;font-family:'IBM Plex Mono',monospace;color:var(--text);background:#f8fafc;outline:none;resize:vertical;line-height:1.5}
+.json-textarea:focus{border-color:var(--primary)}
+.json-result{border-radius:10px;padding:10px 12px;font-size:14px;font-weight:700;margin-bottom:10px;display:none}
+.json-result.ok{background:var(--m2-light);border:1px solid var(--m2);color:var(--m2)}
+.json-result.err{background:var(--red-light);border:1px solid var(--red);color:var(--red)}
+
+/* ── DONE BADGE ── */
+.order-done-badge{background:#059669;color:white;font-size:11px;font-weight:800;border-radius:6px;padding:2px 8px;font-family:'IBM Plex Mono',monospace}
+
+/* ── SPLASH SCREEN ── */
+#splashScreen{position:fixed;inset:0;background:linear-gradient(145deg,#0f172a 0%,#1e3a8a 50%,#0f172a 100%);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .6s ease}
+#splashScreen.hide{opacity:0;pointer-events:none}
+.splash-logo{font-size:72px;margin-bottom:16px;animation:splashPop .6s cubic-bezier(.34,1.56,.64,1)}
+.splash-brand{font-family:'IBM Plex Sans',sans-serif;font-size:42px;font-weight:800;color:#ffffff;letter-spacing:-0.03em;animation:splashPop .7s .1s both cubic-bezier(.34,1.56,.64,1)}
+.splash-brand span{color:#60a5fa}
+.splash-tagline{font-family:'IBM Plex Mono',monospace;font-size:13px;color:rgba(255,255,255,.5);margin-top:8px;letter-spacing:.12em;text-transform:uppercase;animation:fadeUp .6s .3s both}
+.splash-dots{display:flex;gap:8px;margin-top:36px;animation:fadeUp .5s .5s both}
+.splash-dot{width:8px;height:8px;border-radius:50%;background:#3b82f6;animation:dotPulse 1.2s infinite}
+.splash-dot:nth-child(2){animation-delay:.2s;background:#60a5fa}
+.splash-dot:nth-child(3){animation-delay:.4s;background:#93c5fd}
+@keyframes splashPop{from{transform:scale(.5);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes fadeUp{from{transform:translateY(16px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes dotPulse{0%,100%{transform:scale(1);opacity:.5}50%{transform:scale(1.4);opacity:1}}
+
+/* ── TOAST NOTIFICATION ── */
+#toastWrap{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:8000;pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:8px}
+.toast{background:#1e293b;color:white;border-radius:14px;padding:12px 20px;font-size:15px;font-weight:700;font-family:'IBM Plex Sans',sans-serif;box-shadow:0 8px 32px rgba(0,0,0,.4);display:flex;align-items:center;gap:10px;animation:toastIn .3s cubic-bezier(.34,1.56,.64,1);max-width:320px;text-align:center}
+.toast.ok{background:linear-gradient(135deg,#064e3b,#065f46);border:1px solid #059669}
+.toast.err{background:linear-gradient(135deg,#7f1d1d,#991b1b);border:1px solid #dc2626}
+@keyframes toastIn{from{transform:translateY(-20px) scale(.9);opacity:0}to{transform:translateY(0) scale(1);opacity:1}}
+@keyframes toastOut{to{transform:translateY(-20px) scale(.9);opacity:0}}
+
+/* ── SHARE MODAL ── */
+.share-btn{display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px 12px;border-radius:16px;border:2px solid var(--border);background:var(--bg2);cursor:pointer;font-family:inherit;font-weight:700;font-size:13px;color:var(--text);transition:.2s;flex:1}
+.share-btn:active{transform:scale(.94)}
+.share-btn .share-icon{font-size:32px}
+.share-btn.line{border-color:#06c755;background:#f0fff4;color:#06c755}
+.share-btn.messenger{border-color:#0084ff;background:#eff6ff;color:#0084ff}
+.share-btn.copy{border-color:var(--amber);background:var(--amber-light);color:var(--amber)}
+.share-btn.native{border-color:#7c3aed;background:#f5f3ff;color:#7c3aed}
+
+@media print{
+  #splashScreen{display:none !important}
+  .bottom-nav,.fab,.btn-sm,.log-delete,.inner-tabs,.btn-primary{display:none !important}
+  body{background:white;color:#000}
+  .page{display:block !important}
+  .card,.order-item,.log-item{border-color:#ccc !important;background:white !important}
+}
+</style>
+</head>
+<body>
+
+<!-- FIREBASE SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyDoyw1AImnhIA_-hxNxkXrMVDjv5gZ_MlY",
+  authDomain: "zann27pony.firebaseapp.com",
+  databaseURL: "https://zann27pony-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "zann27pony",
+  storageBucket: "zann27pony.firebasestorage.app",
+  messagingSenderId: "862414196695",
+  appId: "1:862414196695:web:2e77bcf6482ee293910592"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+let _fbSyncing = false;
+
+// ── SAVE TO FIREBASE ──
+function saveToFirebase(){
+  try{
+    db.ref('zann/orders').set(orders);
+    db.ref('zann/logs').set(logs);
+  } catch(e){ console.warn('Firebase save error:',e); }
+}
+
+// ── LOAD FROM FIREBASE & LISTEN REALTIME ──
+function initFirebaseSync(){
+  // Show sync indicator
+  const dot = document.getElementById('storageDot');
+
+  db.ref('zann/orders').on('value', snap => {
+    const val = snap.val();
+    if(val && Array.isArray(val)){
+      orders = val;
+      saveLocalOrders();
+      renderOrders(); renderReport(); updateSettingsPage();
+    }
+  });
+
+  db.ref('zann/logs').on('value', snap => {
+    const val = snap.val();
+    if(val && Array.isArray(val)){
+      logs = val;
+      saveLocalLogs();
+      renderLog(); renderOrders(); updateSettingsPage();
+    }
+  });
+
+  if(dot){ dot.style.background='#10b981'; dot.style.boxShadow='0 0 8px #10b981'; }
+}
+
+function saveLocalOrders(){ try{ localStorage.setItem(LS_ORDERS, JSON.stringify(orders)); }catch(e){} }
+function saveLocalLogs(){ try{ localStorage.setItem(LS_LOGS, JSON.stringify(logs)); }catch(e){} }
+</script>
+<div id="splashScreen">
+  <div class="splash-logo">🧵</div>
+  <div class="splash-brand">Z<span>ann</span></div>
+  <div class="splash-tagline">Production Tracker</div>
+  <div class="splash-dots">
+    <div class="splash-dot"></div>
+    <div class="splash-dot"></div>
+    <div class="splash-dot"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toastWrap"></div>
+
+<!-- SHARE MODAL -->
+<div class="overlay" id="shareModal">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">
+      📤 Share Summary
+      <button class="sheet-close" onclick="closeModal('shareModal')">Cancel</button>
+    </div>
+    <div class="sheet-body">
+      <div id="sharePreview" style="background:#f8fafc;border:1px solid var(--border);border-radius:12px;padding:12px;font-family:'IBM Plex Mono',monospace;font-size:12px;white-space:pre-wrap;max-height:200px;overflow-y:auto;margin-bottom:14px;color:var(--text);line-height:1.6"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        <button class="share-btn line" onclick="shareToLine()">
+          <span class="share-icon">💬</span>LINE
+        </button>
+        <button class="share-btn messenger" onclick="shareToMessenger()">
+          <span class="share-icon">💙</span>Messenger
+        </button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <button class="share-btn copy" onclick="shareCopyText()">
+          <span class="share-icon">📋</span>Copy Text
+        </button>
+        <button class="share-btn native" onclick="shareNative()">
+          <span class="share-icon">🔗</span>Share...
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE 1: ORDERS -->
+<div class="page active" id="page-orders">
+  <div class="page-header">
+    <h2>📦 Order List</h2>
+    <p id="ordersMachineTabs">All Orders</p>
+  </div>
+  <div class="machine-tabs">
+    <button class="m-tab both-active" id="ordTab-all" onclick="setOrderMachineTab('all')">
+      ALL <span>M1 + M2</span>
+    </button>
+    <button class="m-tab" id="ordTab-m1" onclick="setOrderMachineTab('m1')">
+      🔵 M1 <span>Machine 1</span>
+    </button>
+    <button class="m-tab" id="ordTab-m2" onclick="setOrderMachineTab('m2')">
+      🟢 M2 <span>Machine 2</span>
+    </button>
+  </div>
+  <!-- SEARCH BAR -->
+  <div class="search-wrap">
+    <div class="search-wrap-inner">
+      <span class="search-icon">🔍</span>
+      <input class="search-input" id="orderSearch" type="search" placeholder="Search order, style, color..." oninput="renderOrders()">
+    </div>
+  </div>
+  <div class="content" id="orderListContent"></div>
+  <button class="fab fab-orders" onclick="openOrderModal(null)">＋</button>
+</div>
+
+<!-- PAGE 2: LOG -->
+<div class="page" id="page-log">
+  <div class="page-header">
+    <h2>⏱ Production Log</h2>
+    <p id="logDateLabel"></p>
+  </div>
+  <div class="machine-tabs">
+    <button class="m-tab both-active" id="logTab-all" onclick="setLogMachineTab('all')">
+      ALL <span>M1 + M2</span>
+    </button>
+    <button class="m-tab" id="logTab-m1" onclick="setLogMachineTab('m1')">
+      🔵 M1 <span>Machine 1</span>
+    </button>
+    <button class="m-tab" id="logTab-m2" onclick="setLogMachineTab('m2')">
+      🟢 M2 <span>Machine 2</span>
+    </button>
+  </div>
+  <div class="content">
+    <div class="card" style="margin-bottom:10px">
+      <div class="card-body">
+        <div class="field" style="margin-bottom:0">
+          <label>Date</label>
+          <input type="date" id="logDate" onchange="renderLog()">
+        </div>
+      </div>
+    </div>
+    <div class="inner-tabs">
+      <button class="inner-tab active" onclick="switchLogTab('today')">This Date</button>
+      <button class="inner-tab" onclick="switchLogTab('all')">All History</button>
+      <button class="inner-tab" onclick="switchLogTab('import')" style="color:var(--amber)">⬆ Import</button>
+    </div>
+    <div id="logContent"></div>
+  </div>
+  <button class="fab fab-m2" onclick="openLogModal(null,2)" title="Add M2 Entry">M2＋</button>
+  <button class="fab fab-m1" onclick="openLogModal(null,1)" title="Add M1 Entry">M1＋</button>
+</div>
+
+<!-- PAGE 3: REPORT -->
+<div class="page" id="page-report">
+  <div class="page-header" style="display:flex;justify-content:space-between;align-items:center">
+    <div>
+      <h2>📊 Daily Report</h2>
+      <p id="reportDateLabel"></p>
+    </div>
+    <button onclick="openSummarySlip()" style="background:rgba(255,255,255,.1);color:white;border:1px solid rgba(255,255,255,.3);border-radius:10px;padding:6px 12px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">📋 Summary</button>
+  </div>
+  <div class="machine-tabs">
+    <button class="m-tab both-active" id="repTab-all" onclick="setReportMachineTab('all')">
+      ALL <span>M1 + M2</span>
+    </button>
+    <button class="m-tab" id="repTab-m1" onclick="setReportMachineTab('m1')">
+      🔵 M1 <span>Machine 1</span>
+    </button>
+    <button class="m-tab" id="repTab-m2" onclick="setReportMachineTab('m2')">
+      🟢 M2 <span>Machine 2</span>
+    </button>
+  </div>
+  <div class="content" id="reportContent"></div>
+</div>
+
+<!-- PAGE 4: SETTINGS / BACKUP -->
+<div class="page" id="page-settings">
+  <div class="page-header">
+    <h2>⚙️ Settings & Backup</h2>
+    <p style="font-family:'IBM Plex Mono',monospace;opacity:0.75">Manage your data & preferences</p>
+  </div>
+  <div class="content">
+
+    <!-- AI ASSISTANT CARD -->
+    <div class="card" style="margin-bottom:10px;background:linear-gradient(135deg,#1e1b4b 0%,#312e81 100%);border-color:#4338ca">
+      <div class="card-body">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <span style="font-size:28px">🤖</span>
+          <div>
+            <div style="font-size:16px;font-weight:800;color:#a5b4fc">AI Order Scanner</div>
+            <div style="font-size:12px;color:#818cf8;margin-top:1px">Photo → JSON auto generate</div>
+          </div>
+          <div style="margin-left:auto;width:10px;height:10px;border-radius:50%;background:#6366f1;box-shadow:0 0 8px #6366f1" id="aiStatusDot"></div>
+        </div>
+        <div style="background:rgba(99,102,241,.15);border-radius:10px;padding:10px 12px;font-size:13px;color:#c7d2fe;margin-bottom:12px;line-height:1.6">
+          📸 Take photo of order sheet → AI reads sizes → Import to app automatically
+        </div>
+        <div class="field" style="margin-bottom:10px">
+          <label style="color:#a5b4fc;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em">Anthropic API Key</label>
+          <div style="position:relative">
+            <input type="password" id="apiKeyInput" placeholder="sk-ant-api03-..." 
+              style="width:100%;padding:10px 44px 10px 12px;border:1.5px solid #4338ca;border-radius:10px;font-size:13px;font-family:'IBM Plex Mono',monospace;color:#e0e7ff;background:#1e1b4b;outline:none"
+              oninput="updateAiStatus()">
+            <button onclick="toggleApiKeyVisibility()" id="apiKeyEye"
+              style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:18px;color:#818cf8">👁</button>
+          </div>
+          <div style="font-size:11px;color:#6366f1;margin-top:4px">Key is stored locally on your device only</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <button onclick="saveApiKey()" style="padding:11px;background:#4338ca;color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">💾 Save Key</button>
+          <button onclick="openAiScanModal()" style="padding:11px;background:#7c3aed;color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">📸 Scan Order</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Storage Status Card -->
+    <div class="card" style="margin-bottom:10px;background:linear-gradient(135deg,#1e293b 0%,#0f2444 100%);border-color:#334155">
+      <div class="card-body">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <span style="font-size:28px">💾</span>
+          <div>
+            <div style="font-size:16px;font-weight:800;color:#e2e8f0">Auto-Save Active</div>
+            <div style="font-size:12px;color:#94a3b8;margin-top:1px" id="storageSizeLabel">Checking storage...</div>
+          </div>
+          <div style="margin-left:auto;width:10px;height:10px;border-radius:50%;background:#10b981;box-shadow:0 0 8px #10b981" id="storageDot"></div>
+        </div>
+        <div style="background:rgba(59,130,246,.1);border-radius:10px;padding:10px 12px;font-size:13px;color:#cbd5e1;margin-bottom:12px">
+          📌 Data is auto-saved in browser localStorage.<br>
+          Safe on refresh & browser close ✅<br>
+          If switching phone/browser → <b style="color:#f59e0b">Export Backup first</b>.
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <button onclick="exportBackup()" style="padding:12px 8px;background:#1d4ed8;color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px">
+            📥 Export Backup
+          </button>
+          <label style="padding:12px 8px;background:#065f46;color:#6ee7b7;border:1.5px solid #059669;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px">
+            📤 Import Backup
+            <input type="file" accept=".json" style="display:none" onchange="importBackup(this)">
+          </label>
+        </div>
+        <div style="margin-top:8px">
+          <button onclick="openJsonImportModal()" style="width:100%;padding:12px 8px;background:#7c3aed;color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px">
+            📋 Paste JSON → Add Orders
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Last Saved -->
+    <div class="card" style="margin-bottom:10px">
+      <div class="card-body" style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.06em">Last Saved</div>
+          <div style="font-size:15px;font-weight:600;color:#111827;margin-top:3px" id="lastSavedLabel">—</div>
+        </div>
+        <span style="font-size:28px">🕐</span>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="card" style="margin-bottom:10px">
+      <div class="card-header"><span style="font-size:14px;font-weight:700">📊 Data Summary</span></div>
+      <div class="card-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div style="background:#f0f4f8;border-radius:10px;padding:12px;text-align:center">
+            <div style="font-size:30px;font-weight:800;color:#6366f1" id="settStatOrders">0</div>
+            <div style="font-size:12px;color:#6b7280;font-weight:600">Orders</div>
+          </div>
+          <div style="background:#f0f4f8;border-radius:10px;padding:12px;text-align:center">
+            <div style="font-size:30px;font-weight:800;color:#10b981" id="settStatLogs">0</div>
+            <div style="font-size:12px;color:#6b7280;font-weight:600">Log Entries</div>
+          </div>
+          <div style="background:#f0f4f8;border-radius:10px;padding:12px;text-align:center">
+            <div style="font-size:30px;font-weight:800;color:#f59e0b" id="settStatTotal">0</div>
+            <div style="font-size:12px;color:#6b7280;font-weight:600">Total Produced</div>
+          </div>
+          <div style="background:#f0f4f8;border-radius:10px;padding:12px;text-align:center">
+            <div style="font-size:30px;font-weight:800;color:#ef4444" id="settStatBalance">0</div>
+            <div style="font-size:12px;color:#6b7280;font-weight:600">Balance Left</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Admin / Lock -->
+    <div class="card" style="margin-bottom:10px">
+      <div class="card-body" style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-size:14px;font-weight:700;color:#111827">Admin Mode</div>
+          <div style="font-size:12px;color:#6b7280;margin-top:2px">PIN lock for editing orders</div>
+        </div>
+        <button onclick="showPinModal()" style="background:#eff6ff;color:#1d4ed8;border:1.5px solid #bfdbfe;border-radius:10px;padding:8px 16px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">
+          <span id="settLockIcon">🔒</span> Admin
+        </button>
+      </div>
+    </div>
+
+    <!-- Danger Zone -->
+    <div class="card" style="border-color:#fecaca;margin-bottom:10px">
+      <div class="card-header" style="background:#fef2f2">
+        <span style="font-weight:700;color:#dc2626">⚠️ Danger Zone</span>
+      </div>
+      <div class="card-body">
+        <p style="font-size:13px;color:#6b7280;margin-bottom:10px">This will delete ALL data. Export backup first!</p>
+        <button onclick="clearAllData()" style="width:100%;padding:12px;background:#fee2e2;color:#dc2626;border:2px solid #fecaca;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">
+          🗑 Clear All Data
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav">
+  <button class="nav-item active" onclick="showPage('orders')" id="nav-orders">
+    <span class="icon">📦</span>Orders
+  </button>
+  <button class="nav-item" onclick="showPage('log')" id="nav-log">
+    <span class="icon">⏱</span>Log
+  </button>
+  <button class="nav-item" onclick="showPage('report')" id="nav-report">
+    <span class="icon">📊</span>Report
+  </button>
+  <button class="nav-item" onclick="showPage('settings')" id="nav-settings">
+    <span class="icon">⚙️</span>Settings
+  </button>
+</div>
+
+<!-- ORDER MODAL -->
+<div class="overlay" id="orderModal">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">
+      <span id="orderModalTitle">New Order</span>
+      <button class="sheet-close" onclick="closeModal('orderModal')">Cancel</button>
+    </div>
+    <div class="sheet-body">
+      <div class="field">
+        <label>Order No.</label>
+        <input type="text" id="f_orderNo" placeholder="e.g. RUS, EDU ...">
+      </div>
+      <div class="field">
+        <label>Style / Type</label>
+        <select id="f_style_sel" onchange="onStyleSelChange()">
+          <option value="">-- Select --</option>
+          <option value="Polo">Polo</option>
+          <option value="JK">JK</option>
+          <option value="Roundneck">Roundneck</option>
+          <option value="မာကာ">မာကာ</option>
+          <option value="__other__">Other (type below)</option>
+        </select>
+        <input type="text" id="f_style_txt" placeholder="Type style name..." style="margin-top:6px;display:none">
+      </div>
+      <div class="field">
+        <label>Color</label>
+        <select id="f_color_sel" onchange="onColorSelChange()">
+          <option value="">-- Select --</option>
+          <option>White</option><option>Black</option><option>Navy</option><option>Red</option>
+          <option>Yellow</option><option>Green</option><option>Blue</option><option>Grey</option>
+          <option>Orange</option><option>Pink</option><option>Purple</option><option>Brown</option>
+          <option>Maroon</option><option>Sky Blue</option>
+          <option value="__other__">Other (type below)</option>
+        </select>
+        <input type="text" id="f_color_txt" placeholder="Type color name..." style="margin-top:6px;display:none">
+      </div>
+      <div class="field">
+        <label>Remark <span style="font-weight:400;opacity:.6">(optional)</span></label>
+        <input type="text" id="f_note" placeholder="e.g. Faculty name, batch...">
+      </div>
+
+      <!-- Machine Assignment -->
+      <div class="section-label" style="margin-bottom:8px">Machine Assignment</div>
+      <div class="machine-select-row" style="margin-bottom:12px">
+        <div style="background:var(--m1-light);border:1.5px solid var(--m1);border-radius:10px;padding:10px">
+          <div style="font-size:12px;font-weight:800;color:var(--m1);margin-bottom:8px">🔵 MACHINE 1</div>
+          <div class="field" style="margin-bottom:6px">
+            <label>Used?</label>
+            <select id="f_m1_used" style="border-color:var(--m1)"><option value="no">No</option><option value="yes">Yes</option></select>
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <label>OT End Time</label>
+            <input type="time" id="f_m1_ot" style="border-color:var(--m1)">
+          </div>
+        </div>
+        <div style="background:var(--m2-light);border:1.5px solid var(--m2);border-radius:10px;padding:10px">
+          <div style="font-size:12px;font-weight:800;color:var(--m2);margin-bottom:8px">🟢 MACHINE 2</div>
+          <div class="field" style="margin-bottom:6px">
+            <label>Used?</label>
+            <select id="f_m2_used" style="border-color:var(--m2)"><option value="no">No</option><option value="yes">Yes</option></select>
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <label>OT End Time</label>
+            <input type="time" id="f_m2_ot" style="border-color:var(--m2)">
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Size Range</label>
+        <select id="f_sizeRange" onchange="updateSizeGrid()">
+          <option value="standard">Standard (S – 10XL)</option>
+          <option value="small">Small Only (5S – XL)</option>
+          <option value="5s10xl">5S – 10XL (Full Range)</option>
+        </select>
+      </div>
+      <div class="section-label">Order Qty by Size</div>
+      <div class="size-input-grid" id="sizeInputGrid"></div>
+      <button class="btn-primary" onclick="saveOrder()">Save Order</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOG MODAL -->
+<div class="overlay" id="logModal">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="logModalTitle">
+      Add Entry
+      <button class="sheet-close" onclick="closeModal('logModal')">Cancel</button>
+    </div>
+    <div class="sheet-body">
+      <div class="info-box" id="logModalMachineBanner">📌 Past entry: change date &amp; time below.</div>
+
+      <!-- MACHINE SELECT -->
+      <div class="section-label">Machine</div>
+      <div class="machine-select-row">
+        <button type="button" id="msel_m1" class="msel-btn active-m1" onclick="selectLogMachine(1)">
+          🔵 MACHINE 1<br><span style="font-size:11px;opacity:.7">M1</span>
+        </button>
+        <button type="button" id="msel_m2" class="msel-btn" onclick="selectLogMachine(2)">
+          🟢 MACHINE 2<br><span style="font-size:11px;opacity:.7">M2</span>
+        </button>
+      </div>
+      <input type="hidden" id="fl_machine" value="1">
+
+      <div class="field-row">
+        <div class="field"><label>Date</label><input type="date" id="fl_date"></div>
+        <div class="field"><label>Time</label><input type="time" id="fl_time"></div>
+      </div>
+      <div class="field">
+        <label>Order Name</label>
+        <select id="fl_order" onchange="onLogOrderChange()">
+          <option value="">-- Select Order --</option>
+        </select>
+      </div>
+      <div id="fl_order_info" style="display:none" class="order-info-card">
+        <div style="display:flex;gap:16px;flex-wrap:wrap">
+          <div><div class="oic-label">Style</div><div class="oic-val" id="fl_info_style"></div></div>
+          <div><div class="oic-label">Color</div><div class="oic-val" id="fl_info_color"></div></div>
+          <div><div class="oic-label">Order No.</div><div class="oic-val" id="fl_info_orderno"></div></div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Size</label>
+        <div id="fl_size_buttons" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px"></div>
+        <input type="hidden" id="fl_size">
+      </div>
+      <div class="field">
+        <label>Qty (pieces)</label>
+        <input type="number" id="fl_qty" placeholder="0" min="1" style="font-size:28px;font-weight:800;text-align:center;font-family:'IBM Plex Mono',monospace">
+      </div>
+      <div class="field">
+        <label>Remark (optional)</label>
+        <textarea id="fl_remark" placeholder="e.g. Feeder broken, Power cut..."></textarea>
+      </div>
+      <button class="btn-primary m1" id="logSaveBtn" onclick="saveLog()">Save Entry</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT LOG MODAL -->
+<div class="overlay" id="editLogModal">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">✏️ Edit Entry<button class="sheet-close" onclick="closeModal('editLogModal')">Cancel</button></div>
+    <div class="sheet-body">
+      <!-- Machine select in edit -->
+      <div class="section-label">Machine</div>
+      <div class="machine-select-row">
+        <button type="button" id="emsel_m1" class="msel-btn active-m1" onclick="selectEditMachine(1)">🔵 MACHINE 1</button>
+        <button type="button" id="emsel_m2" class="msel-btn" onclick="selectEditMachine(2)">🟢 MACHINE 2</button>
+      </div>
+      <input type="hidden" id="el_machine" value="1">
+      <div class="field-row">
+        <div class="field"><label>Date</label><input type="date" id="el_date"></div>
+        <div class="field"><label>Time</label><input type="time" id="el_time"></div>
+      </div>
+      <div class="field">
+        <label>Size</label>
+        <select id="el_size">
+          <option value="">-- Size --</option>
+          <option>5S</option><option>4S</option><option>3S</option><option>2S</option>
+          <option>S</option><option>M</option><option>L</option><option>XL</option>
+          <option>2XL</option><option>3XL</option><option>4XL</option><option>5XL</option>
+          <option>6XL</option><option>7XL</option><option>8XL</option><option>9XL</option><option>10XL</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Qty</label>
+        <input type="number" id="el_qty" min="1" style="font-size:26px;font-weight:800;text-align:center;font-family:'IBM Plex Mono',monospace">
+      </div>
+      <div class="field">
+        <label>Remark</label>
+        <textarea id="el_remark" placeholder="optional"></textarea>
+      </div>
+      <button class="btn-primary amber" onclick="saveEditLog()">💾 Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- PIN MODAL -->
+<div class="overlay" id="pinModal">
+  <div class="sheet" style="max-height:60vh">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" style="justify-content:center">🔒 Admin Login</div>
+    <div class="sheet-body" style="text-align:center;padding:20px">
+      <div style="font-size:15px;color:var(--text2);margin-bottom:16px">PIN ထည့်ပါ</div>
+      <input type="password" id="pinInput" maxlength="6" inputmode="numeric" placeholder="••••••" class="pin-input"
+        onkeydown="if(event.key==='Enter')submitPin()">
+      <div id="pinError" style="display:none;color:var(--red);font-size:14px;margin-bottom:10px">❌ PIN မမှန်ဘူး</div>
+      <button onclick="submitPin()" style="width:100%;padding:14px;background:var(--primary);color:white;border:none;border-radius:12px;font-size:16px;font-weight:800;cursor:pointer;font-family:inherit">✓ OK</button>
+      <button onclick="closeModal('pinModal')" style="width:100%;padding:12px;background:none;color:var(--text2);border:none;font-size:15px;cursor:pointer;margin-top:8px;font-family:inherit">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- SUMMARY SLIP MODAL -->
+<div class="overlay" id="slipModal">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">
+      📋 Daily Summary Slip
+      <div style="display:flex;gap:6px">
+        <button onclick="openShareModal()" style="background:#7c3aed;color:white;border:none;border-radius:8px;padding:5px 12px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">📤 Share</button>
+        <button onclick="printSlip()" style="background:var(--bg3);color:var(--text);border:none;border-radius:8px;padding:5px 12px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">🖨 Print</button>
+        <button class="sheet-close" onclick="closeModal('slipModal')">Close</button>
+      </div>
+    </div>
+    <div class="sheet-body" id="slipContent"></div>
+  </div>
+</div>
+
+<!-- AI SCAN MODAL -->
+<div class="overlay" id="aiScanModal">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">
+      🤖 AI Order Scanner
+      <button class="sheet-close" onclick="closeModal('aiScanModal')">Cancel</button>
+    </div>
+    <div class="sheet-body">
+      <!-- Step 1: Upload Photo -->
+      <div id="aiStep1">
+        <div style="background:linear-gradient(135deg,#1e1b4b,#312e81);border-radius:12px;padding:14px;margin-bottom:14px;text-align:center">
+          <div style="font-size:36px;margin-bottom:6px">📸</div>
+          <div style="color:#a5b4fc;font-size:14px;font-weight:700">Upload order sheet photo</div>
+          <div style="color:#818cf8;font-size:12px;margin-top:4px">Claude AI will read sizes automatically</div>
+        </div>
+        <label style="display:block;width:100%;padding:14px;background:#7c3aed;color:white;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;text-align:center;margin-bottom:10px">
+          📷 Choose Photo
+          <input type="file" accept="image/*" id="aiPhotoInput" style="display:none" onchange="onAiPhotoSelected(this)">
+        </label>
+        <div id="aiPhotoPreview" style="display:none;margin-bottom:12px">
+          <img id="aiPhotoImg" style="width:100%;border-radius:12px;max-height:200px;object-fit:cover">
+        </div>
+      </div>
+      <!-- Step 2: Machine Select -->
+      <div id="aiStep2" style="display:none">
+        <div style="font-size:13px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Assign to Machine</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">
+          <button id="aiMachBtn1" onclick="setAiMachine(1)" style="padding:12px 6px;background:#dbeafe;color:#1d4ed8;border:2px solid #1d4ed8;border-radius:10px;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit">🔵 M1</button>
+          <button id="aiMachBtn2" onclick="setAiMachine(2)" style="padding:12px 6px;background:var(--bg3);color:var(--text2);border:2px solid var(--border2);border-radius:10px;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit">🟢 M2</button>
+          <button id="aiMachBtnB" onclick="setAiMachine(0)" style="padding:12px 6px;background:var(--bg3);color:var(--text2);border:2px solid var(--border2);border-radius:10px;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit">⚡ Both</button>
+        </div>
+        <input type="hidden" id="aiMachineVal" value="1">
+        <button onclick="runAiScan()" id="aiScanBtn" style="width:100%;padding:14px;background:linear-gradient(135deg,#7c3aed,#4338ca);color:white;border:none;border-radius:12px;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px">
+          🤖 Scan with AI
+        </button>
+      </div>
+      <!-- Step 3: Loading -->
+      <div id="aiLoading" style="display:none;text-align:center;padding:20px 0">
+        <div style="font-size:42px;animation:dotPulse 1s infinite">🤖</div>
+        <div style="font-size:15px;font-weight:700;color:#7c3aed;margin-top:10px">Analyzing order sheet...</div>
+        <div style="font-size:13px;color:#6b7280;margin-top:6px">Reading sizes & quantities</div>
+      </div>
+      <!-- Step 4: Result -->
+      <div id="aiResult" style="display:none">
+        <div style="background:var(--m2-light);border:1px solid var(--m2);border-radius:10px;padding:10px 12px;font-size:14px;font-weight:700;color:var(--m2);margin-bottom:12px" id="aiResultMsg"></div>
+        <div style="background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-family:'IBM Plex Mono',monospace;font-size:12px;white-space:pre-wrap;max-height:180px;overflow-y:auto;margin-bottom:12px;color:var(--text)" id="aiJsonPreview"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <button onclick="aiRescan()" style="padding:12px;background:var(--bg3);color:var(--text);border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">🔄 Rescan</button>
+          <button onclick="aiConfirmImport()" style="padding:12px;background:#059669;color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">✅ Add Orders</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- JSON IMPORT MODAL -->
+<div class="overlay" id="jsonImportModal">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">
+      📋 Paste JSON → Add Orders
+      <button class="sheet-close" onclick="closeModal('jsonImportModal')">Cancel</button>
+    </div>
+    <div class="sheet-body">
+      <div class="info-box" style="margin-bottom:12px">
+        📸 Order photo ပို့ → Claude က JSON ပေးမည် → ဒီမှာ paste → Orders auto ဝင်မည်!
+      </div>
+      <div class="json-result" id="jsonResult"></div>
+      <div class="field">
+        <label>JSON Code</label>
+        <textarea class="json-textarea" id="jsonPasteArea" placeholder='[{"orderNo":"RUS","style":"Polo","color":"Yellow","note":"optional","sizes":{"S":420,"M":1005,"L":1515}}]'></textarea>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+        <button onclick="document.getElementById('jsonPasteArea').value=''" style="padding:12px;background:var(--bg3);color:var(--text2);border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">🗑 Clear</button>
+        <button onclick="importJsonOrders()" style="padding:12px;background:#7c3aed;color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">✅ Add Orders</button>
+      </div>
+      <div style="background:var(--bg3);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--text2);line-height:1.8">
+        <b style="color:var(--text)">Fields:</b> orderNo · style · color · note (optional) · sizes<br>
+        <b style="color:#7c3aed">Existing orders မပျက်ဘဲ add လုပ်မည်</b>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── CONSTANTS ──
+const SIZES_FULL = ['5S','4S','3S','2S','S','M','L','XL','2XL','3XL','4XL','5XL','6XL','7XL','8XL','9XL','10XL'];
+const SIZES_STD  = ['S','M','L','XL','2XL','3XL','4XL','5XL','6XL','7XL','8XL','9XL','10XL'];
+const SIZES_SML  = ['5S','4S','3S','2S','S','M','L','XL'];
+const ADMIN_PIN  = '878800';
+const LS_ORDERS  = 'prodtracker_orders_v2';
+const LS_LOGS    = 'prodtracker_logs_v2';
+
+// ── STATE ──
+let isAdmin = false;
+let orderMachineTab = 'all'; // 'all','m1','m2'
+let logMachineTab   = 'all';
+let reportMachineTab= 'all';
+let logViewTab      = 'today'; // 'today','all','import'
+
+// Default orders — ใช้เมื่อ localStorage ว่างเปล่าเท่านั้น
+const DEFAULT_ORDERS = [
+  {id:1,orderNo:'EDU',style:'Polo',color:'Purple',note:'No.2026/04013 — คณะครุศาสตร์',m1_used:'no',m1_ot:'',m2_used:'no',m2_ot:'',sizes:{S:163,M:353,L:363,XL:193,'2XL':73,'3XL':42,'4XL':16,'5XL':16,'6XL':11}},
+  {id:2,orderNo:'HUSOC',style:'Polo',color:'Orange',note:'No.2026/04014 — คณะมนุษย์ฯ',m1_used:'no',m1_ot:'',m2_used:'no',m2_ot:'',sizes:{S:168,M:333,L:383,XL:143,'2XL':53,'3XL':32,'4XL':11,'5XL':11,'6XL':11}},
+  {id:3,orderNo:'SCI',style:'Polo',color:'Yellow',note:'No.2026/04015 — วิทยาศาสตร์ฯ',m1_used:'no',m1_ot:'',m2_used:'no',m2_ot:'',sizes:{S:32,M:102,L:162,XL:62,'2XL':32,'3XL':17,'4XL':7,'5XL':11,'6XL':11}},
+  {id:4,orderNo:'AGRI',style:'Polo',color:'Green',note:'No.2026/04017 — เทคโนโลยีการเกษตร',m1_used:'no',m1_ot:'',m2_used:'no',m2_ot:'',sizes:{S:11,M:22,L:22,XL:11,'2XL':11,'3XL':6,'4XL':6,'5XL':6,'6XL':6}},
+  {id:5,orderNo:'INTER',style:'Polo',color:'Pink',note:'No.2026/04018 — วิทยาลัยนานาชาติ',m1_used:'no',m1_ot:'',m2_used:'no',m2_ot:'',sizes:{S:43,M:83,L:93,XL:43,'2XL':12,'3XL':7,'4XL':7,'5XL':7,'6XL':7}},
+  {id:6,orderNo:'FON',style:'Polo',color:'Red',note:'No.2026/04020 — คณะพยาบาลศาสตร์',m1_used:'no',m1_ot:'',m2_used:'no',m2_ot:'',sizes:{S:17,M:32,L:32,XL:12,'2XL':12,'3XL':6,'4XL':6}},
+  {id:7,orderNo:'FMS',style:'Polo',color:'Blue',note:'No.2026/04016 — วิทยาการจัดการ',m1_used:'no',m1_ot:'',m2_used:'no',m2_ot:'',sizes:{S:133,M:223,L:303,XL:103,'2XL':43,'3XL':22,'4XL':22,'5XL':12,'6XL':12}},
+  {id:8,orderNo:'MHSC',style:'Polo',color:'Navy',note:'No.2026/04019 — วิทยาลัยแม่ฮ่องสอน',m1_used:'no',m1_ot:'',m2_used:'no',m2_ot:'',sizes:{S:42,M:92,L:82,XL:21,'2XL':11,'3XL':6,'4XL':6}},
+  {id:9,orderNo:'RUS',style:'Polo',color:'Yellow',note:'No.2026/04006 — ราชมงคลสุวรรณภูมิ',m1_used:'no',m1_ot:'',m2_used:'no',m2_ot:'',sizes:{S:420,M:1005,L:1515,XL:1355,'2XL':845,'3XL':185,'4XL':145,'5XL':37,'6XL':37,'7XL':37,'8XL':32,'9XL':12,'10XL':22}}
+];
+let orders = [];
+let logs = [];
+let reportPhotos = [];
+
+// ── HELPERS ──
+function today(){ return new Date().toISOString().split('T')[0]; }
+function nowTime(){ const d=new Date(); return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0'); }
+function fmtDate(d){ if(!d) return ''; const p=d.split('-'); return `${p[2]}/${p[1]}/${p[0]}`; }
+function fmtTimeAmPm(t){
+  if(!t) return '';
+  const [hStr,mStr]=t.split(':');
+  let h=parseInt(hStr), m=parseInt(mStr||0);
+  const ampm=h>=12?'PM':'AM';
+  h=h%12||12;
+  return `${h}:${mStr.padStart(2,'0')} ${ampm}`;
+}
+function getSizeList(){
+  const r = document.getElementById('f_sizeRange');
+  if(!r) return SIZES_STD;
+  if(r.value==='small') return SIZES_SML;
+  if(r.value==='5s10xl') return SIZES_FULL;
+  return SIZES_STD;
+}
+
+// ── TOAST ──
+function showToast(msg, type='ok', dur=2200){
+  const wrap=document.getElementById('toastWrap');
+  const t=document.createElement('div');
+  t.className='toast '+(type);
+  t.textContent=msg;
+  wrap.appendChild(t);
+  setTimeout(()=>{
+    t.style.animation='toastOut .3s forwards';
+    setTimeout(()=>t.remove(),300);
+  },dur);
+}
+
+// ── SPLASH ──
+function hideSplash(){
+  const s=document.getElementById('splashScreen');
+  if(s){ s.classList.add('hide'); setTimeout(()=>s.remove(),700); }
+}
+
+// ── STORAGE ──
+function saveToStorage(){ try{ localStorage.setItem(LS_ORDERS,JSON.stringify(orders)); localStorage.setItem(LS_LOGS,JSON.stringify(logs)); }catch(e){} }
+function loadFromStorage(){
+  try{
+    const so=localStorage.getItem(LS_ORDERS);
+    const sl=localStorage.getItem(LS_LOGS);
+    if(so) orders=JSON.parse(so);
+    else   orders=JSON.parse(JSON.stringify(DEFAULT_ORDERS));
+    if(sl) logs=JSON.parse(sl);
+    else   logs=[];
+  }catch(e){
+    orders=JSON.parse(JSON.stringify(DEFAULT_ORDERS));
+    logs=[];
+  }
+}
+
+// ── AUTH ──
+function checkAuth(){
+  if(localStorage.getItem('prod_admin')===ADMIN_PIN){ isAdmin=true; }
+  updateAuthUI();
+}
+function updateAuthUI(){
+  const lockBtn = document.getElementById('lockBtn');
+  if(lockBtn) lockBtn.textContent = isAdmin?'🔓 Admin':'🔒 Login';
+  const settLockIcon = document.getElementById('settLockIcon');
+  if(settLockIcon) settLockIcon.textContent = isAdmin?'🔓':'🔒';
+
+  // Admin-only elements
+  document.querySelectorAll('.admin-only').forEach(el=>{ el.style.display=isAdmin?'':'none'; });
+
+  // FAB buttons — admin only
+  document.querySelectorAll('.fab').forEach(el=>{ el.style.display=isAdmin?'flex':'none'; });
+
+  // Delete buttons in log
+  document.querySelectorAll('.log-delete').forEach(el=>{ el.style.display=isAdmin?'block':'none'; });
+
+  // Settings nav — admin only
+  const navSettings = document.getElementById('nav-settings');
+  if(navSettings) navSettings.style.display = isAdmin?'':'none';
+
+  // Log nav — admin only
+  const navLog = document.getElementById('nav-log');
+  if(navLog) navLog.style.display = isAdmin?'':'none';
+
+  // If viewer is on settings or log page, redirect to orders
+  if(!isAdmin){
+    const activePage = document.querySelector('.page.active');
+    if(activePage && (activePage.id==='page-settings' || activePage.id==='page-log')){
+      showPage('orders');
+    }
+  }
+
+  // Show/hide admin indicator banner
+  let banner = document.getElementById('adminBanner');
+  if(!banner){
+    banner = document.createElement('div');
+    banner.id = 'adminBanner';
+    banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:200;text-align:center;font-size:12px;font-weight:800;padding:4px;font-family:"IBM Plex Mono",monospace;letter-spacing:.06em;cursor:pointer';
+    banner.onclick = showPinModal;
+    document.body.appendChild(banner);
+  }
+  if(isAdmin){
+    banner.style.background='#059669';
+    banner.style.color='white';
+    banner.textContent='🔓 ADMIN MODE — Tap to logout';
+  } else {
+    banner.style.background='#1e293b';
+    banner.style.color='#94a3b8';
+    banner.textContent='👁 VIEW ONLY — Tap to login';
+  }
+  document.body.style.paddingTop = '24px';
+}
+function showPinModal(){
+  if(isAdmin){
+    if(confirm('Admin mode မှ ထွက်မလား?')){ isAdmin=false; localStorage.removeItem('prod_admin'); updateAuthUI(); }
+    return;
+  }
+  document.getElementById('pinInput').value='';
+  document.getElementById('pinError').style.display='none';
+  document.getElementById('pinModal').classList.add('open');
+  setTimeout(()=>document.getElementById('pinInput').focus(),300);
+}
+function submitPin(){
+  const pin=document.getElementById('pinInput').value.trim();
+  if(pin===ADMIN_PIN){ isAdmin=true; localStorage.setItem('prod_admin',pin); closeModal('pinModal'); updateAuthUI(); }
+  else{ document.getElementById('pinError').style.display='block'; document.getElementById('pinInput').value=''; }
+}
+
+// ── PAGE NAV ──
+function showPage(name){
+  // Block settings and log for non-admin
+  if(!isAdmin && (name==='settings' || name==='log')){
+    showToast('🔒 Admin login required','err',2000);
+    showPinModal();
+    return;
+  }
+  ['orders','log','report','settings'].forEach(p=>{
+    document.getElementById('page-'+p).classList.remove('active');
+    document.getElementById('nav-'+p).classList.remove('active');
+  });
+  document.getElementById('page-'+name).classList.add('active');
+  document.getElementById('nav-'+name).classList.add('active');
+  if(name==='orders')   renderOrders();
+  if(name==='log')      renderLog();
+  if(name==='report')   renderReport();
+  if(name==='settings') updateSettingsPage();
+}
+
+// ── MACHINE TAB HELPERS ──
+function setOrderMachineTab(t){
+  orderMachineTab=t;
+  ['all','m1','m2'].forEach(x=>{
+    const b=document.getElementById('ordTab-'+x);
+    b.className='m-tab'+(t===x?(t==='all'?' both-active':t==='m1'?' m1-active':' m2-active'):'');
+  });
+  renderOrders();
+}
+function setLogMachineTab(t){
+  logMachineTab=t;
+  ['all','m1','m2'].forEach(x=>{
+    const b=document.getElementById('logTab-'+x);
+    b.className='m-tab'+(t===x?(t==='all'?' both-active':t==='m1'?' m1-active':' m2-active'):'');
+  });
+  renderLog();
+}
+function setReportMachineTab(t){
+  reportMachineTab=t;
+  ['all','m1','m2'].forEach(x=>{
+    const b=document.getElementById('repTab-'+x);
+    b.className='m-tab'+(t===x?(t==='all'?' both-active':t==='m1'?' m1-active':' m2-active'):'');
+  });
+  renderReport();
+}
+
+// ── PRODUCED HELPERS ──
+function getProducedByOrder(orderId, machine){
+  // machine: undefined=all, 1=M1, 2=M2
+  const r={};
+  logs.filter(l=>l.orderId===orderId && (machine===undefined || (l.machine||1)===machine))
+    .forEach(l=>{ r[l.size]=(r[l.size]||0)+(parseInt(l.qty)||0); });
+  return r;
+}
+function getProducedTotalByOrder(orderId, machine){
+  return logs.filter(l=>l.orderId===orderId && (machine===undefined || (l.machine||1)===machine))
+    .reduce((s,l)=>s+(parseInt(l.qty)||0),0);
+}
+
+// ── ORDERS PAGE ──
+function renderOrders(){
+  const c=document.getElementById('orderListContent');
+  c.innerHTML='';
+  const mFilter = orderMachineTab;
+  const searchQ = (document.getElementById('orderSearch')?.value||'').toLowerCase().trim();
+
+  let filteredOrders = orders;
+  if(mFilter==='m1') filteredOrders=orders.filter(o=>o.m1_used==='yes');
+  if(mFilter==='m2') filteredOrders=orders.filter(o=>o.m2_used==='yes');
+
+  // Search filter
+  if(searchQ){
+    filteredOrders=filteredOrders.filter(o=>
+      (o.orderNo||'').toLowerCase().includes(searchQ)||
+      (o.style||'').toLowerCase().includes(searchQ)||
+      (o.color||'').toLowerCase().includes(searchQ)||
+      (o.note||'').toLowerCase().includes(searchQ)
+    );
+  }
+
+  if(!filteredOrders.length){
+    c.innerHTML=`<div class="empty"><div class="emoji">${searchQ?'🔍':'📦'}</div>${searchQ?'No results for "'+searchQ+'"':'No orders for this machine tab.'}</div>`;
+    return;
+  }
+
+  const mFilter1 = (mFilter==='all'||mFilter==='m1');
+  const mFilter2 = (mFilter==='all'||mFilter==='m2');
+  const totalM1 = mFilter1 ? logs.filter(l=>(l.machine||1)===1).reduce((s,l)=>s+(parseInt(l.qty)||0),0) : 0;
+  const totalM2 = mFilter2 ? logs.filter(l=>l.machine===2).reduce((s,l)=>s+(parseInt(l.qty)||0),0) : 0;
+
+  if(mFilter==='all' && !searchQ){
+    const summBar=document.createElement('div');
+    summBar.className='stat-row';
+    summBar.innerHTML=`
+      <div class="stat-box m1">
+        <div class="stat-label m1">🔵 Machine 1 — Total</div>
+        <div class="stat-val m1">${totalM1.toLocaleString()}</div>
+        <div class="stat-sub">pcs produced</div>
+      </div>
+      <div class="stat-box m2">
+        <div class="stat-label m2">🟢 Machine 2 — Total</div>
+        <div class="stat-val m2">${totalM2.toLocaleString()}</div>
+        <div class="stat-sub">pcs produced</div>
+      </div>`;
+    c.appendChild(summBar);
+  }
+
+  filteredOrders.forEach(o=>{
+    const orderTotal = Object.values(o.sizes).reduce((a,b)=>a+b,0);
+    const prodAll = getProducedByOrder(o.id);
+    const prodM1  = getProducedByOrder(o.id,1);
+    const prodM2  = getProducedByOrder(o.id,2);
+    const totalAll= Object.values(prodAll).reduce((a,b)=>a+b,0);
+    const totalM1o= Object.values(prodM1).reduce((a,b)=>a+b,0);
+    const totalM2o= Object.values(prodM2).reduce((a,b)=>a+b,0);
+    const isDone  = orderTotal>0 && totalAll>=orderTotal;
+
+    const activeSizes = SIZES_FULL.filter(sz=>o.sizes[sz]);
+    let sizeHTML = activeSizes.map(sz=>{
+      const oq=o.sizes[sz]||0;
+      const pm1=mFilter!=='m2'?(prodM1[sz]||0):0;
+      const pm2=mFilter!=='m1'?(prodM2[sz]||0):0;
+      const pAll=pm1+pm2;
+      const bal=oq-pAll;
+      return `<div class="size-cell">
+        <div class="size-label">${sz}</div>
+        <div class="size-qty">${oq.toLocaleString()}</div>
+        ${pm1>0&&mFilter!=='m2'?`<div class="size-m1">M1:${pm1.toLocaleString()}</div>`:''}
+        ${pm2>0&&mFilter!=='m1'?`<div class="size-m2">M2:${pm2.toLocaleString()}</div>`:''}
+        ${pAll>0?`<div class="size-bal">↓${bal.toLocaleString()}</div>`:''}
+      </div>`;
+    }).join('');
+
+    const machBadges = [
+      o.m1_used==='yes'?`<span class="badge-m1">M1${o.m1_ot?' OT:'+o.m1_ot:''}</span>`:'',
+      o.m2_used==='yes'?`<span class="badge-m2">M2${o.m2_ot?' OT:'+o.m2_ot:''}</span>`:''
+    ].filter(Boolean).join(' ');
+
+    // Color stripe
+    const stripeColor = getColorHex(o.color);
+    const stripeStyle = stripeColor ? `background:${stripeColor}` : `background:var(--border2)`;
+
+    const div=document.createElement('div');
+    div.className='order-item';
+    if(isDone) div.style.opacity='0.75';
+    div.innerHTML=`
+      <div style="height:4px;${stripeStyle};border-radius:0"></div>
+      <div class="order-item-header" onclick="toggleSizes(${o.id})">
+        <div>
+          <div class="order-name" style="display:flex;align-items:center;gap:8px">
+            ${o.orderNo} — ${o.style}
+            ${isDone?`<span class="order-done-badge">✓ DONE</span>`:''}
+          </div>
+          <div class="order-sub">${o.color}${o.note?' · '+o.note:''}</div>
+          ${machBadges?`<div style="margin-top:5px;display:flex;gap:5px">${machBadges}</div>`:''}
+          ${(mFilter==='all'&&(totalM1o>0||totalM2o>0))?`
+          <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
+            <div style="font-size:12px;background:var(--m1-light);color:var(--m1);border-radius:6px;padding:2px 8px;font-weight:700;font-family:'IBM Plex Mono',monospace">M1: ${totalM1o.toLocaleString()}</div>
+            <div style="font-size:12px;background:var(--m2-light);color:var(--m2);border-radius:6px;padding:2px 8px;font-weight:700;font-family:'IBM Plex Mono',monospace">M2: ${totalM2o.toLocaleString()}</div>
+          </div>`:''}
+        </div>
+        <div>
+          <div class="order-total-label">Total Order</div>
+          <div class="order-total">${orderTotal.toLocaleString()}</div>
+          ${totalAll>0?`<div style="font-size:12px;color:var(--text2);text-align:right;font-family:'IBM Plex Mono',monospace;margin-top:2px">Done: ${totalAll.toLocaleString()}</div>`:''}
+        </div>
+      </div>
+      <div class="size-grid" id="sizes_${o.id}" style="display:grid">${sizeHTML}</div>
+      <div class="order-actions">
+        <button class="btn-sm btn-edit admin-only" onclick="openOrderModal(${o.id})" style="display:${isAdmin?'':'none'}">✏️ Edit</button>
+        <button class="btn-sm btn-log-m1 admin-only" onclick="quickLog(${o.id},1)" style="display:${isAdmin?'':'none'}">🔵 M1＋</button>
+        <button class="btn-sm btn-log-m2 admin-only" onclick="quickLog(${o.id},2)" style="display:${isAdmin?'':'none'}">🟢 M2＋</button>
+        <button class="btn-sm btn-del admin-only" onclick="deleteOrder(${o.id})" style="display:${isAdmin?'':'none'};flex:0.5">🗑</button>
+      </div>`;
+    c.appendChild(div);
+  });
+}
+
+function toggleSizes(id){
+  const el=document.getElementById('sizes_'+id);
+  el.style.display=el.style.display==='none'?'grid':'none';
+}
+function quickLog(orderId,machine){
+  if(!isAdmin){ showPinModal(); return; }
+  showPage('log');
+  setTimeout(()=>openLogModal(orderId,machine),150);
+}
+function deleteOrder(id){
+  if(!isAdmin){ showToast('🔒 Admin login required','err',2000); showPinModal(); return; }
+  const o=orders.find(x=>x.id===id);
+  if(!o) return;
+  const hasLogs=logs.some(l=>l.orderId===id);
+  if(!confirm(`Delete "${o.orderNo}"?${hasLogs?'\n\n⚠️ Logs for this order will also be deleted.':''}`)) return;
+  orders=orders.filter(x=>x.id!==id);
+  logs=logs.filter(l=>l.orderId!==id);
+  saveToStorage(); renderOrders();
+}
+
+// ── STYLE/COLOR DROPDOWN ──
+function onStyleSelChange(){ const s=document.getElementById('f_style_sel'),t=document.getElementById('f_style_txt'); t.style.display=s.value==='__other__'?'block':'none'; if(s.value!=='__other__') t.value=''; }
+function onColorSelChange(){ const s=document.getElementById('f_color_sel'),t=document.getElementById('f_color_txt'); t.style.display=s.value==='__other__'?'block':'none'; if(s.value!=='__other__') t.value=''; }
+function getStyleVal(){ const s=document.getElementById('f_style_sel').value; return s==='__other__'?document.getElementById('f_style_txt').value.trim():s; }
+function getColorVal(){ const s=document.getElementById('f_color_sel').value; return s==='__other__'?document.getElementById('f_color_txt').value.trim():s; }
+function setStyleVal(val){ const s=document.getElementById('f_style_sel'),t=document.getElementById('f_style_txt'); const k=['Polo','JK','Roundneck','မာကာ']; if(k.includes(val)){s.value=val;t.style.display='none';t.value='';} else if(val){s.value='__other__';t.style.display='block';t.value=val;} else{s.value='';t.style.display='none';t.value='';} }
+function setColorVal(val){ const s=document.getElementById('f_color_sel'),t=document.getElementById('f_color_txt'); const k=['White','Black','Navy','Red','Yellow','Green','Blue','Grey','Orange','Pink','Purple','Brown','Maroon','Sky Blue']; if(k.includes(val)){s.value=val;t.style.display='none';t.value='';} else if(val){s.value='__other__';t.style.display='block';t.value=val;} else{s.value='';t.style.display='none';t.value='';} }
+
+// ── SIZE GRID ──
+function updateSizeGrid(){
+  const grid=document.getElementById('sizeInputGrid'); if(!grid) return;
+  const cur={};
+  grid.querySelectorAll('.size-input-item').forEach(el=>{ const l=el.querySelector('label')?.textContent,v=el.querySelector('input')?.value; if(l&&v) cur[l]=v; });
+  grid.innerHTML='';
+  getSizeList().forEach(sz=>{ const d=document.createElement('div'); d.className='size-input-item'; d.innerHTML=`<label>${sz}</label><input type="number" min="0" placeholder="0" id="si_${sz}" value="${cur[sz]||''}">`; grid.appendChild(d); });
+}
+
+// ── ORDER MODAL ──
+function openOrderModal(id){
+  const rangeEl=document.getElementById('f_sizeRange');
+  if(id){ const o=orders.find(x=>x.id===id); const hasFull=SIZES_FULL.slice(0,4).some(s=>o.sizes[s]); rangeEl.value=hasFull?'5s10xl':'standard'; }
+  else { rangeEl.value='standard'; }
+  updateSizeGrid();
+  if(id){
+    const o=orders.find(x=>x.id===id);
+    document.getElementById('orderModalTitle').textContent='Edit Order';
+    document.getElementById('f_orderNo').value=o.orderNo;
+    setStyleVal(o.style||''); setColorVal(o.color||'');
+    document.getElementById('f_note').value=o.note||'';
+    document.getElementById('f_m1_used').value=o.m1_used||'no';
+    document.getElementById('f_m1_ot').value=o.m1_ot||'';
+    document.getElementById('f_m2_used').value=o.m2_used||'no';
+    document.getElementById('f_m2_ot').value=o.m2_ot||'';
+    getSizeList().forEach(sz=>{ const inp=document.getElementById('si_'+sz); if(inp) inp.value=o.sizes[sz]||''; });
+    document.getElementById('orderModal')._editId=id;
+  } else {
+    document.getElementById('orderModalTitle').textContent='New Order';
+    ['f_orderNo','f_note','f_m1_ot','f_m2_ot'].forEach(id=>document.getElementById(id).value='');
+    setStyleVal(''); setColorVal('');
+    document.getElementById('f_m1_used').value='no'; document.getElementById('f_m2_used').value='no';
+    document.getElementById('orderModal')._editId=null;
+  }
+  document.getElementById('orderModal').classList.add('open');
+}
+function saveOrder(){
+  const orderNo=document.getElementById('f_orderNo').value.trim();
+  const style=getStyleVal(), color=getColorVal(), note=document.getElementById('f_note').value.trim();
+  const m1_used=document.getElementById('f_m1_used').value, m1_ot=document.getElementById('f_m1_ot').value;
+  const m2_used=document.getElementById('f_m2_used').value, m2_ot=document.getElementById('f_m2_ot').value;
+  if(!orderNo){alert('Please enter Order No.');return;}
+  if(!style){alert('Please select/enter Style.');return;}
+  if(!color){alert('Please select/enter Color.');return;}
+  const sizes={};
+  getSizeList().forEach(sz=>{ const v=parseInt(document.getElementById('si_'+sz)?.value); if(!isNaN(v)&&v>0) sizes[sz]=v; });
+  if(!Object.keys(sizes).length){alert('Please enter at least one size qty.');return;}
+  const editId=document.getElementById('orderModal')._editId;
+  if(editId){ const o=orders.find(x=>x.id===editId); Object.assign(o,{orderNo,style,color,note,sizes,m1_used,m1_ot,m2_used,m2_ot}); }
+  else { orders.push({id:Date.now(),orderNo,style,color,note,sizes,m1_used,m1_ot,m2_used,m2_ot}); }
+  saveToStorage(); closeModal('orderModal'); renderOrders();
+}
+
+// ── LOG VIEW TABS ──
+function switchLogTab(tab){
+  logViewTab=tab;
+  document.querySelectorAll('.inner-tab').forEach((b,i)=>b.classList.toggle('active',['today','all','import'][i]===tab));
+  if(tab==='import') renderBulkImport(); else renderLog();
+}
+
+// ── LOG PAGE ──
+function renderLog(){
+  const date=document.getElementById('logDate').value;
+  document.getElementById('logDateLabel').textContent=fmtDate(date);
+  const c=document.getElementById('logContent');
+  c.innerHTML='';
+  const mFilter=logMachineTab; // 'all','m1','m2'
+  const machineNum=mFilter==='m1'?1:mFilter==='m2'?2:undefined;
+
+  let entries;
+  if(logViewTab==='today'){
+    entries=logs.filter(l=>l.date===date && (machineNum===undefined || (l.machine||1)===machineNum))
+      .sort((a,b)=>a.time.localeCompare(b.time));
+  } else {
+    const byDate={};
+    logs.filter(l=>machineNum===undefined||(l.machine||1)===machineNum)
+      .forEach(l=>{ if(!byDate[l.date]) byDate[l.date]=[]; byDate[l.date].push(l); });
+    const dates=Object.keys(byDate).sort((a,b)=>b.localeCompare(a));
+    if(!dates.length){ c.innerHTML='<div class="empty"><div class="emoji">⏱</div>No entries yet.</div>'; return; }
+    dates.forEach(d=>{
+      const divider=document.createElement('div'); divider.className='date-divider';
+      const dtotal=byDate[d].reduce((s,l)=>s+(parseInt(l.qty)||0),0);
+      const dm1=byDate[d].filter(l=>(l.machine||1)===1).reduce((s,l)=>s+(parseInt(l.qty)||0),0);
+      const dm2=byDate[d].filter(l=>l.machine===2).reduce((s,l)=>s+(parseInt(l.qty)||0),0);
+      divider.innerHTML=`<span>${fmtDate(d)}</span><hr>
+        <span style="font-size:12px;font-family:'IBM Plex Mono',monospace">
+          ${mFilter==='all'?`<span style="color:var(--m1)">M1:${dm1.toLocaleString()}</span> <span style="color:var(--m2)">M2:${dm2.toLocaleString()}</span>`:
+            mFilter==='m1'?`<span style="color:var(--m1)">${dm1.toLocaleString()} pcs</span>`:
+            `<span style="color:var(--m2)">${dm2.toLocaleString()} pcs</span>`}
+        </span>`;
+      c.appendChild(divider);
+      byDate[d].sort((a,b)=>a.time.localeCompare(b.time)).forEach(l=>c.appendChild(buildLogItem(l,false)));
+    });
+    return;
+  }
+
+  if(!entries.length){ c.innerHTML='<div class="empty"><div class="emoji">⏱</div>No entries for this filter.<br>Tap M1+ or M2+ to add.</div>'; return; }
+
+  const m1total=entries.filter(l=>(l.machine||1)===1).reduce((s,l)=>s+(parseInt(l.qty)||0),0);
+  const m2total=entries.filter(l=>l.machine===2).reduce((s,l)=>s+(parseInt(l.qty)||0),0);
+  const bar=document.createElement('div'); bar.className='stat-row';
+
+  if(mFilter==='all' || mFilter==='m1'){
+    bar.innerHTML+=`<div class="stat-box m1">
+      <div class="stat-label m1">🔵 Machine 1 Today</div>
+      <div class="stat-val m1">${m1total.toLocaleString()}</div>
+      <div class="stat-sub">pcs</div>
+    </div>`;
+  }
+  if(mFilter==='all' || mFilter==='m2'){
+    bar.innerHTML+=`<div class="stat-box m2">
+      <div class="stat-label m2">🟢 Machine 2 Today</div>
+      <div class="stat-val m2">${m2total.toLocaleString()}</div>
+      <div class="stat-sub">pcs</div>
+    </div>`;
+  }
+  if(mFilter==='all'){
+    bar.innerHTML+=`<div class="stat-box total">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div><div class="stat-label tot">Grand Total Today</div><div class="stat-val tot">${(m1total+m2total).toLocaleString()}</div></div>
+        <div class="comp-bar-wrap" style="width:140px">
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text2);margin-bottom:3px;font-family:'IBM Plex Mono',monospace">
+            <span style="color:var(--m1)">M1 ${m1total>0?Math.round(m1total/(m1total+m2total)*100):0}%</span>
+            <span style="color:var(--m2)">M2 ${m2total>0?Math.round(m2total/(m1total+m2total)*100):0}%</span>
+          </div>
+          <div class="comp-bar">
+            <div class="comp-bar-m1" style="width:${m1total+m2total>0?m1total/(m1total+m2total)*100:50}%"></div>
+            <div class="comp-bar-m2" style="flex:1"></div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }
+  c.appendChild(bar);
+  entries.forEach(l=>c.appendChild(buildLogItem(l,true)));
+}
+
+function buildLogItem(l, showDate){
+  const o=orders.find(x=>x.id===l.orderId);
+  const m=(l.machine||1);
+  const div=document.createElement('div');
+  div.className=`log-item m${m}-item`;
+  const timeDisplay = fmtTimeAmPm(l.time);
+  div.innerHTML=`
+    <div class="log-left">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
+        <span class="badge-m${m}">M${m}</span>
+        <span class="log-order">${o?o.orderNo+' — '+o.style:'Unknown'}</span>
+      </div>
+      <div class="log-detail">Size: <b style="font-family:'IBM Plex Mono',monospace">${l.size}</b>${o?' &nbsp;|&nbsp; '+o.color:''}</div>
+      ${l.remark?`<div class="log-note">📝 ${l.remark}</div>`:''}
+    </div>
+    <div class="log-right">
+      <div class="log-qty m${m}">${(parseInt(l.qty)||0).toLocaleString()}</div>
+      <div class="log-time">${timeDisplay}${showDate&&logViewTab==='all'?' · '+fmtDate(l.date):''}</div>
+      <button class="log-delete" onclick="deleteLog('${l.id}')">🗑</button>
+    </div>`;
+  return div;
+}
+
+// ── LOG MODAL ──
+function openLogModal(preOrderId, preMachine){
+  const m = premachine => preMachine || 1;
+  const machine = preMachine || preOrderId ? (preMachine||1) : 1;
+  selectLogMachine(machine);
+  const sel=document.getElementById('fl_order');
+  sel.innerHTML='<option value="">-- Select Order --</option>';
+  orders.forEach(o=>{ const opt=document.createElement('option'); opt.value=o.id; opt.textContent=`${o.orderNo} — ${o.style} · ${o.color}`; sel.appendChild(opt); });
+  if(preOrderId) sel.value=preOrderId;
+  document.getElementById('fl_date').value=document.getElementById('logDate').value||today();
+  document.getElementById('fl_time').value=nowTime();
+  document.getElementById('fl_qty').value='';
+  document.getElementById('fl_remark').value='';
+  document.getElementById('fl_size').value='';
+  onLogOrderChange();
+  document.getElementById('logModal').classList.add('open');
+}
+
+// Fix: use the actual parameter
+function openLogModal(preOrderId, preM){
+  const machine = preM || 1;
+  selectLogMachine(machine);
+  const sel=document.getElementById('fl_order');
+  sel.innerHTML='<option value="">-- Select Order --</option>';
+  orders.forEach(o=>{ const opt=document.createElement('option'); opt.value=o.id; opt.textContent=`${o.orderNo} — ${o.style} · ${o.color}`; sel.appendChild(opt); });
+  if(preOrderId) sel.value=preOrderId;
+  document.getElementById('fl_date').value=document.getElementById('logDate').value||today();
+  document.getElementById('fl_time').value=nowTime();
+  document.getElementById('fl_qty').value='';
+  document.getElementById('fl_remark').value='';
+  document.getElementById('fl_size').value='';
+  onLogOrderChange();
+  document.getElementById('logModal').classList.add('open');
+}
+
+function selectLogMachine(n){
+  document.getElementById('fl_machine').value=n;
+  const b1=document.getElementById('msel_m1'), b2=document.getElementById('msel_m2');
+  if(n===1){ b1.className='msel-btn active-m1'; b2.className='msel-btn'; }
+  else { b2.className='msel-btn active-m2'; b1.className='msel-btn'; }
+  // Update save button color
+  const btn=document.getElementById('logSaveBtn');
+  if(btn){ btn.className='btn-primary '+(n===1?'m1':'m2'); }
+  // Update title
+  const title=document.getElementById('logModalTitle');
+  if(title) title.firstChild.textContent=`Add Entry — Machine ${n} `;
+}
+function selectEditMachine(n){
+  document.getElementById('el_machine').value=n;
+  const b1=document.getElementById('emsel_m1'),b2=document.getElementById('emsel_m2');
+  if(n===1){ b1.className='msel-btn active-m1'; b2.className='msel-btn'; }
+  else { b2.className='msel-btn active-m2'; b1.className='msel-btn'; }
+}
+
+function onLogOrderChange(){
+  const orderId=parseInt(document.getElementById('fl_order').value);
+  const infoBox=document.getElementById('fl_order_info'), btnBox=document.getElementById('fl_size_buttons');
+  document.getElementById('fl_size').value='';
+  if(!orderId){ infoBox.style.display='none'; btnBox.innerHTML='<span style="color:var(--text2);font-size:14px">Select order first</span>'; return; }
+  const o=orders.find(x=>x.id===orderId);
+  if(!o) return;
+  infoBox.style.display='block';
+  document.getElementById('fl_info_style').textContent=o.style||'—';
+  document.getElementById('fl_info_color').textContent=o.color||'—';
+  document.getElementById('fl_info_orderno').textContent=o.orderNo||'—';
+  const machine=parseInt(document.getElementById('fl_machine').value)||1;
+  const producedAll=getProducedByOrder(orderId);
+  const producedM=getProducedByOrder(orderId,machine);
+  btnBox.innerHTML='';
+  SIZES_FULL.filter(sz=>o.sizes[sz]).forEach(sz=>{
+    const oq=o.sizes[sz]||0, pm=producedM[sz]||0, pAll=producedAll[sz]||0, bal=oq-pAll;
+    const btn=document.createElement('button');
+    btn.className='sz-btn'+(pAll>0?' done':'');
+    btn.type='button';
+    btn.innerHTML=`${sz}<br><span style="font-size:9px;opacity:.7">↓${bal.toLocaleString()}</span>`;
+    btn.onclick=()=>{
+      btnBox.querySelectorAll('.sz-btn').forEach(b=>{b.classList.remove('active-m1','active-m2');});
+      btn.classList.add(machine===1?'active-m1':'active-m2');
+      document.getElementById('fl_size').value=sz;
+      document.getElementById('fl_qty').focus();
+    };
+    btnBox.appendChild(btn);
+  });
+}
+
+function playSuccessSound(){
+  try{
+    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    const o1=ctx.createOscillator(),g1=ctx.createGain();
+    o1.connect(g1);g1.connect(ctx.destination);
+    o1.type='sine';o1.frequency.setValueAtTime(880,ctx.currentTime);
+    g1.gain.setValueAtTime(0.4,ctx.currentTime);g1.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.25);
+    o1.start(ctx.currentTime);o1.stop(ctx.currentTime+0.25);
+    const o2=ctx.createOscillator(),g2=ctx.createGain();
+    o2.connect(g2);g2.connect(ctx.destination);
+    o2.type='sine';o2.frequency.setValueAtTime(1320,ctx.currentTime+0.15);
+    g2.gain.setValueAtTime(0,ctx.currentTime+0.15);g2.gain.setValueAtTime(0.35,ctx.currentTime+0.15);
+    g2.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.45);
+    o2.start(ctx.currentTime+0.15);o2.stop(ctx.currentTime+0.45);
+  }catch(e){}
+}
+
+function saveLog(){
+  const date=document.getElementById('fl_date').value, time=document.getElementById('fl_time').value;
+  const orderId=parseInt(document.getElementById('fl_order').value), size=document.getElementById('fl_size').value;
+  const qty=document.getElementById('fl_qty').value, remark=document.getElementById('fl_remark').value.trim();
+  const machine=parseInt(document.getElementById('fl_machine').value)||1;
+  if(!orderId){alert('Please select an order.');return;}
+  if(!size){alert('Please select a size.');return;}
+  if(!qty||parseInt(qty)<=0){alert('Please enter qty.');return;}
+  const o=orders.find(x=>x.id===orderId);
+  logs.push({id:Date.now().toString(),date,time,orderId,size,qty:parseInt(qty),remark,machine});
+  playSuccessSound();
+  saveToStorage();
+  closeModal('logModal');
+  document.getElementById('logDate').value=date;
+  renderLog(); renderOrders();
+  // Toast with checkmark
+  const mLabel=machine===1?'🔵 M1':'🟢 M2';
+  showToast(`✅ ${mLabel} · ${o?o.orderNo:'?'} · ${size} · +${parseInt(qty).toLocaleString()} pcs`,'ok',2500);
+}
+
+function deleteLog(id){
+  if(!isAdmin){ showToast('🔒 Admin login required','err',2000); showPinModal(); return; }
+  if(!confirm('Delete this entry?')) return;
+  logs=logs.filter(l=>l.id!==id);
+  saveToStorage(); renderLog(); renderOrders();
+}
+function deleteLogFromReport(id){
+  if(!isAdmin){ showToast('🔒 Admin login required','err',2000); showPinModal(); return; }
+  if(!confirm('Delete this entry?')) return;
+  logs=logs.filter(l=>l.id!==id);
+  saveToStorage(); renderReport(); renderOrders();
+}
+function openEditLog(id){
+  const l=logs.find(x=>x.id===id); if(!l) return;
+  document.getElementById('el_date').value=l.date;
+  document.getElementById('el_time').value=l.time;
+  document.getElementById('el_size').value=l.size;
+  document.getElementById('el_qty').value=l.qty;
+  document.getElementById('el_remark').value=l.remark||'';
+  selectEditMachine(l.machine||1);
+  document.getElementById('editLogModal')._editId=id;
+  document.getElementById('editLogModal').classList.add('open');
+}
+function saveEditLog(){
+  const id=document.getElementById('editLogModal')._editId, l=logs.find(x=>x.id===id); if(!l) return;
+  const size=document.getElementById('el_size').value, qty=parseInt(document.getElementById('el_qty').value);
+  const remark=document.getElementById('el_remark').value.trim(), machine=parseInt(document.getElementById('el_machine').value)||1;
+  if(!size){alert('Select a size.');return;} if(!qty||qty<=0){alert('Enter valid qty.');return;}
+  l.date=document.getElementById('el_date').value; l.time=document.getElementById('el_time').value;
+  l.size=size; l.qty=qty; l.remark=remark; l.machine=machine;
+  closeModal('editLogModal'); saveToStorage(); renderReport(); renderOrders(); renderLog();
+}
+
+// ── REPORT PAGE ──
+function renderReport(){
+  const c=document.getElementById('reportContent');
+  const savedPhotos=[...reportPhotos]; c.innerHTML=''; reportPhotos=savedPhotos;
+  const date=document.getElementById('logDate').value||today();
+  document.getElementById('reportDateLabel').textContent=fmtDate(date)+' Report';
+  const mFilter=reportMachineTab;
+  const machineNum=mFilter==='m1'?1:mFilter==='m2'?2:undefined;
+
+  const dayLogs=logs.filter(l=>l.date===date&&(machineNum===undefined||(l.machine||1)===machineNum));
+  const m1day=logs.filter(l=>l.date===date&&(l.machine||1)===1).reduce((s,l)=>s+(parseInt(l.qty)||0),0);
+  const m2day=logs.filter(l=>l.date===date&&l.machine===2).reduce((s,l)=>s+(parseInt(l.qty)||0),0);
+  const grandTotal=dayLogs.reduce((s,l)=>s+(parseInt(l.qty)||0),0);
+
+  // Top stats
+  const topStats=document.createElement('div');
+  if(mFilter==='all'){
+    topStats.className='stat-row';
+    topStats.innerHTML=`
+      <div class="stat-box m1">
+        <div class="stat-label m1">🔵 M1 Today</div>
+        <div class="stat-val m1">${m1day.toLocaleString()}</div>
+        <div class="stat-sub">pcs</div>
+      </div>
+      <div class="stat-box m2">
+        <div class="stat-label m2">🟢 M2 Today</div>
+        <div class="stat-val m2">${m2day.toLocaleString()}</div>
+        <div class="stat-sub">pcs</div>
+      </div>
+      <div class="stat-box total">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div class="stat-label tot">Grand Total — ${fmtDate(date)}</div>
+            <div class="stat-val tot">${grandTotal.toLocaleString()}</div>
+          </div>
+          <div style="width:130px">
+            <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text2);margin-bottom:4px;font-family:'IBM Plex Mono',monospace">
+              <span style="color:var(--m1)">M1 ${m1day+m2day>0?Math.round(m1day/(m1day+m2day)*100):0}%</span>
+              <span style="color:var(--m2)">M2 ${m1day+m2day>0?Math.round(m2day/(m1day+m2day)*100):0}%</span>
+            </div>
+            <div class="comp-bar" style="height:10px">
+              <div class="comp-bar-m1" style="width:${m1day+m2day>0?m1day/(m1day+m2day)*100:50}%"></div>
+              <div class="comp-bar-m2" style="flex:1"></div>
+            </div>
+          </div>
+        </div>
+      </div>`;
+  } else if(mFilter==='m1'){
+    topStats.innerHTML=`<div class="stat-box m1" style="margin-bottom:10px">
+      <div class="stat-label m1">🔵 Machine 1 — ${fmtDate(date)}</div>
+      <div class="stat-val m1">${m1day.toLocaleString()}</div>
+      <div class="stat-sub">pcs produced today</div>
+    </div>`;
+  } else {
+    topStats.innerHTML=`<div class="stat-box m2" style="margin-bottom:10px">
+      <div class="stat-label m2">🟢 Machine 2 — ${fmtDate(date)}</div>
+      <div class="stat-val m2">${m2day.toLocaleString()}</div>
+      <div class="stat-sub">pcs produced today</div>
+    </div>`;
+  }
+  c.appendChild(topStats);
+
+  // Per-order cards
+  orders.forEach(o=>{
+    const oLogsAll=dayLogs.filter(l=>l.orderId===o.id);
+    if(!oLogsAll.length) return;
+    const oLogsM1=oLogsAll.filter(l=>(l.machine||1)===1);
+    const oLogsM2=oLogsAll.filter(l=>l.machine===2);
+    const todM1=oLogsM1.reduce((s,l)=>s+(parseInt(l.qty)||0),0);
+    const todM2=oLogsM2.reduce((s,l)=>s+(parseInt(l.qty)||0),0);
+    const todAll=oLogsAll.reduce((s,l)=>s+(parseInt(l.qty)||0),0);
+
+    const allProdAll=getProducedByOrder(o.id);
+    const allProdM1=getProducedByOrder(o.id,1);
+    const allProdM2=getProducedByOrder(o.id,2);
+    const orderTotal=Object.values(o.sizes).reduce((a,b)=>a+b,0);
+    const allTotalAll=Object.values(allProdAll).reduce((a,b)=>a+b,0);
+    const allTotalM1=Object.values(allProdM1).reduce((a,b)=>a+b,0);
+    const allTotalM2=Object.values(allProdM2).reduce((a,b)=>a+b,0);
+    const remaining=orderTotal-allTotalAll;
+
+    const activeSizes=SIZES_FULL.filter(sz=>o.sizes[sz]||allProdAll[sz]);
+
+    // Size rows — show M1 and M2 columns when viewing all
+    let sizeTable='';
+    if(mFilter==='all'){
+      sizeTable=`<table class="rep-table" style="width:100%">
+        <thead><tr>
+          <th>Size</th>
+          <th class="r">Order</th>
+          <th class="r" style="color:var(--m1)">M1 Done</th>
+          <th class="r" style="color:var(--m2)">M2 Done</th>
+          <th class="r">Total Done</th>
+          <th class="r">Balance</th>
+        </tr></thead><tbody>`;
+      activeSizes.forEach(sz=>{
+        const oq=o.sizes[sz]||0, pm1=allProdM1[sz]||0, pm2=allProdM2[sz]||0, pAll=pm1+pm2, bal=oq-pAll;
+        const bc=bal>0?'var(--amber)':bal===0?'var(--m2)':'var(--red)';
+        sizeTable+=`<tr>
+          <td style="font-weight:800;color:var(--primary);font-family:'IBM Plex Mono',monospace">${sz}</td>
+          <td class="r">${oq.toLocaleString()}</td>
+          <td class="r" style="color:var(--m1);font-weight:700">${pm1>0?pm1.toLocaleString():'-'}</td>
+          <td class="r" style="color:var(--m2);font-weight:700">${pm2>0?pm2.toLocaleString():'-'}</td>
+          <td class="r" style="font-weight:800">${pAll.toLocaleString()}</td>
+          <td class="r" style="color:${bc};font-weight:800">${bal.toLocaleString()}</td>
+        </tr>`;
+      });
+      sizeTable+=`</tbody><tfoot><tr>
+        <td>TOTAL</td>
+        <td class="r">${orderTotal.toLocaleString()}</td>
+        <td class="r" style="color:var(--m1)">${allTotalM1.toLocaleString()}</td>
+        <td class="r" style="color:var(--m2)">${allTotalM2.toLocaleString()}</td>
+        <td class="r">${allTotalAll.toLocaleString()}</td>
+        <td class="r" style="color:${remaining>0?'var(--amber)':'var(--m2)'}">${remaining.toLocaleString()}</td>
+      </tr></tfoot></table>`;
+    } else {
+      const mNum=mFilter==='m1'?1:2;
+      const mColor=mFilter==='m1'?'var(--m1)':'var(--m2)';
+      const prodM=mFilter==='m1'?allProdM1:allProdM2;
+      const totalM=mFilter==='m1'?allTotalM1:allTotalM2;
+      sizeTable=`<table class="rep-table" style="width:100%">
+        <thead><tr>
+          <th>Size</th>
+          <th class="r">Order</th>
+          <th class="r" style="color:${mColor}">M${mNum} Done</th>
+          <th class="r">Total Done</th>
+          <th class="r">Balance</th>
+        </tr></thead><tbody>`;
+      activeSizes.forEach(sz=>{
+        const oq=o.sizes[sz]||0, pm=prodM[sz]||0, pAll=allProdAll[sz]||0, bal=oq-pAll;
+        const bc=bal>0?'var(--amber)':bal===0?'var(--m2)':'var(--red)';
+        sizeTable+=`<tr>
+          <td style="font-weight:800;color:var(--primary);font-family:'IBM Plex Mono',monospace">${sz}</td>
+          <td class="r">${oq.toLocaleString()}</td>
+          <td class="r" style="color:${mColor};font-weight:800">${pm>0?pm.toLocaleString():'-'}</td>
+          <td class="r" style="font-weight:800">${pAll.toLocaleString()}</td>
+          <td class="r" style="color:${bc};font-weight:800">${bal.toLocaleString()}</td>
+        </tr>`;
+      });
+      sizeTable+=`</tbody><tfoot><tr>
+        <td>TOTAL</td>
+        <td class="r">${orderTotal.toLocaleString()}</td>
+        <td class="r" style="color:${mColor}">${totalM.toLocaleString()}</td>
+        <td class="r">${allTotalAll.toLocaleString()}</td>
+        <td class="r" style="color:${remaining>0?'var(--amber)':'var(--m2)'}">${remaining.toLocaleString()}</td>
+      </tr></tfoot></table>`;
+    }
+
+    // Log rows for this order
+    let logRowsHTML='';
+    const logsToShow = mFilter==='all'?oLogsAll : mFilter==='m1'?oLogsM1:oLogsM2;
+    logsToShow.sort((a,b)=>a.time.localeCompare(b.time)).forEach(l=>{
+      const mc=l.machine||1;
+      logRowsHTML+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px;gap:6px">
+        <span style="color:var(--text2);min-width:40px;font-family:'IBM Plex Mono',monospace">${l.time}</span>
+        <span class="badge-m${mc}">M${mc}</span>
+        <span style="font-weight:800;min-width:30px;font-family:'IBM Plex Mono',monospace">${l.size}</span>
+        <span style="font-weight:800;color:${mc===1?'var(--m1)':'var(--m2)'};flex:1;font-family:'IBM Plex Mono',monospace">+${l.qty.toLocaleString()}</span>
+        ${l.remark?`<span style="font-size:12px;color:var(--amber)">📝${l.remark}</span>`:''}
+        <button onclick="openEditLog('${l.id}')" style="background:var(--bg3);color:var(--text);border:none;border-radius:6px;padding:3px 8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">✏️</button>
+        <button onclick="deleteLogFromReport('${l.id}')" style="background:var(--red-light);color:var(--red);border:none;border-radius:6px;padding:3px 8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">🗑</button>
+      </div>`;
+    });
+
+    const machBadges=[
+      o.m1_used==='yes'?`<span class="badge-m1">M1${o.m1_ot?' OT:'+o.m1_ot:''}</span>`:'',
+      o.m2_used==='yes'?`<span class="badge-m2">M2${o.m2_ot?' OT:'+o.m2_ot:''}` +'</span>':''
+    ].filter(Boolean).join(' ');
+
+    const card=document.createElement('div'); card.className='card';
+    const todayDisplay = mFilter==='m1'?todM1:mFilter==='m2'?todM2:todAll;
+    const todayColor   = mFilter==='m1'?'var(--m1)':mFilter==='m2'?'var(--m2)':'var(--m2)';
+    card.innerHTML=`
+      <div class="card-header">
+        <div>
+          <div style="font-size:16px;font-weight:800;color:var(--text)">${o.orderNo} — ${o.style}</div>
+          <div style="font-size:13px;color:var(--text2)">${o.color}${o.note?' · '+o.note:''}</div>
+          ${machBadges?`<div style="display:flex;gap:5px;margin-top:5px">${machBadges}</div>`:''}
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.06em">Today${mFilter!=='all'?' (M'+mFilter.slice(1)+')':''}</div>
+          <div style="font-size:26px;font-weight:800;color:${todayColor};font-family:'IBM Plex Mono',monospace">${todayDisplay.toLocaleString()}</div>
+          ${mFilter==='all'&&(todM1>0||todM2>0)?`
+          <div style="display:flex;gap:4px;justify-content:flex-end;margin-top:3px">
+            ${todM1>0?`<span style="background:var(--m1);color:white;border-radius:5px;padding:1px 6px;font-size:11px;font-weight:800;font-family:'IBM Plex Mono',monospace">M1:${todM1}</span>`:''}
+            ${todM2>0?`<span style="background:var(--m2);color:white;border-radius:5px;padding:1px 6px;font-size:11px;font-weight:800;font-family:'IBM Plex Mono',monospace">M2:${todM2}</span>`:''}
+          </div>`:''}
+        </div>
+      </div>
+      <div style="overflow-x:auto">${sizeTable}</div>
+      <div style="padding:10px 14px">
+        ${logRowsHTML?`<div class="section-label" style="margin-bottom:6px">Today's Logs${mFilter!=='all'?' (M'+mFilter.slice(1)+')':''}</div>${logRowsHTML}`:''}
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px">
+          <button onclick="quickLog(${o.id},1)" class="admin-only" style="display:${isAdmin?'flex':'none'};align-items:center;justify-content:center;gap:4px;padding:9px;background:var(--m1-light);color:var(--m1);border:1.5px dashed var(--m1);border-radius:8px;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit">🔵 M1＋</button>
+          <button onclick="quickLog(${o.id},2)" class="admin-only" style="display:${isAdmin?'flex':'none'};align-items:center;justify-content:center;gap:4px;padding:9px;background:var(--m2-light);color:var(--m2);border:1.5px dashed var(--m2);border-radius:8px;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit">🟢 M2＋</button>
+        </div>
+      </div>`;
+    c.appendChild(card);
+  });
+
+  // Print button
+  const printBtn=document.createElement('button');
+  printBtn.className='btn-primary'; printBtn.style.marginBottom='10px';
+  printBtn.textContent='🖨 Print / Export'; printBtn.onclick=()=>window.print();
+  c.appendChild(printBtn);
+
+  // Photo section
+  const photoSection=document.createElement('div'); photoSection.className='card'; photoSection.style.marginTop='10px';
+  photoSection.innerHTML=`<div class="card-header">
+    <div style="font-size:16px;font-weight:700;color:var(--text)">📷 Photos</div>
+    <label style="background:var(--bg3);color:var(--primary);border-radius:8px;padding:6px 14px;font-size:13px;font-weight:700;cursor:pointer">
+      + Add Photo<input type="file" accept="image/*" multiple style="display:none" onchange="addReportPhotos(this)">
+    </label>
+  </div>
+  <div id="reportPhotoGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:10px 12px;min-height:60px"></div>`;
+  c.appendChild(photoSection);
+  if(reportPhotos.length) refreshPhotoGrid();
+}
+
+// ── PHOTOS ──
+function addReportPhotos(input){
+  Array.from(input.files).forEach(file=>{ const r=new FileReader(); r.onload=e=>{ reportPhotos.push({dataUrl:e.target.result,name:file.name}); refreshPhotoGrid(); }; r.readAsDataURL(file); });
+  input.value='';
+}
+function refreshPhotoGrid(){
+  const grid=document.getElementById('reportPhotoGrid'); if(!grid) return;
+  grid.innerHTML='';
+  if(!reportPhotos.length){ grid.innerHTML='<div style="grid-column:1/-1;text-align:center;color:var(--text2);padding:16px 0;font-size:14px">No photos yet.</div>'; return; }
+  reportPhotos.forEach((p,i)=>{ const w=document.createElement('div'); w.style.cssText='position:relative;border-radius:8px;overflow:hidden;aspect-ratio:1;background:var(--bg3)'; w.innerHTML=`<img src="${p.dataUrl}" style="width:100%;height:100%;object-fit:cover"><button onclick="removePhoto(${i})" style="position:absolute;top:3px;right:3px;background:rgba(0,0,0,.6);color:white;border:none;border-radius:50%;width:20px;height:20px;font-size:12px;cursor:pointer">✕</button>`; grid.appendChild(w); });
+}
+function removePhoto(i){ reportPhotos.splice(i,1); refreshPhotoGrid(); }
+
+// ── SUMMARY SLIP ──
+function openSummarySlip(){
+  const date=document.getElementById('logDate').value||today();
+  const dayLogs=logs.filter(l=>l.date===date);
+  const m1total=dayLogs.filter(l=>(l.machine||1)===1).reduce((s,l)=>s+(parseInt(l.qty)||0),0);
+  const m2total=dayLogs.filter(l=>l.machine===2).reduce((s,l)=>s+(parseInt(l.qty)||0),0);
+  let blocks='';
+  orders.forEach(o=>{
+    const oLogs=dayLogs.filter(l=>l.orderId===o.id); if(!oLogs.length) return;
+    const todM1=oLogs.filter(l=>(l.machine||1)===1).reduce((s,l)=>s+(parseInt(l.qty)||0),0);
+    const todM2=oLogs.filter(l=>l.machine===2).reduce((s,l)=>s+(parseInt(l.qty)||0),0);
+    const allProd=getProducedByOrder(o.id);
+    const activeSizes=SIZES_FULL.filter(sz=>o.sizes[sz]);
+    const sizeRows=activeSizes.map(sz=>{
+      const oq=o.sizes[sz]||0,pq=allProd[sz]||0,bal=oq-pq;
+      return `<tr><td style="padding:3px 6px;font-weight:700;color:#1d4ed8;font-family:monospace">${sz}</td><td style="padding:3px 6px;text-align:right">${oq.toLocaleString()}</td><td style="padding:3px 6px;text-align:right;color:#3b82f6">${(getProducedByOrder(o.id,1)[sz]||0).toLocaleString()}</td><td style="padding:3px 6px;text-align:right;color:#10b981">${(getProducedByOrder(o.id,2)[sz]||0).toLocaleString()}</td><td style="padding:3px 6px;text-align:right;font-weight:700;color:${bal>0?'#d97706':'#059669'}">${bal.toLocaleString()}</td></tr>`;
+    }).join('');
+    const logLines=oLogs.sort((a,b)=>a.time.localeCompare(b.time)).map(l=>`<div style="display:flex;gap:8px;font-size:13px;padding:2px 0;border-bottom:1px solid #f0f4f8"><span style="color:#6b7280;font-family:monospace">${l.time}</span><span style="background:${(l.machine||1)===1?'#3b82f6':'#10b981'};color:white;border-radius:4px;padding:0 6px;font-size:12px;font-weight:800">M${l.machine||1}</span><span style="font-weight:700;font-family:monospace">${l.size}</span><span style="color:${(l.machine||1)===1?'#3b82f6':'#10b981'};font-weight:800;font-family:monospace">+${l.qty.toLocaleString()}</span>${l.remark?`<span style="color:#d97706">📝${l.remark}</span>`:''}</div>`).join('');
+    blocks+=`<div style="margin-bottom:14px;page-break-inside:avoid">
+      <div style="font-weight:800;color:#1d4ed8;margin-bottom:4px">${o.orderNo} — ${o.style} · ${o.color} &nbsp;<span style="color:#10b981">▶ M1:${todM1} M2:${todM2}</span></div>
+      <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:4px"><thead><tr style="background:#f0f4f8"><th style="padding:3px 6px;text-align:left;font-size:11px;color:#6b7280">SZ</th><th style="padding:3px 6px;text-align:right;font-size:11px;color:#6b7280">Ord</th><th style="padding:3px 6px;text-align:right;font-size:11px;color:#3b82f6">M1</th><th style="padding:3px 6px;text-align:right;font-size:11px;color:#10b981">M2</th><th style="padding:3px 6px;text-align:right;font-size:11px;color:#6b7280">Bal</th></tr></thead><tbody>${sizeRows}</tbody></table>
+      ${logLines}
+    </div>`;
+  });
+  document.getElementById('slipContent').innerHTML=`
+    <div style="text-align:center;margin-bottom:14px">
+      <div style="font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.08em">Daily Summary — ${fmtDate(date)}</div>
+      <div style="display:flex;justify-content:center;gap:24px;margin:10px 0">
+        <div><div style="font-size:11px;color:#3b82f6;font-weight:700">🔵 M1</div><div style="font-size:40px;font-weight:900;color:#3b82f6;line-height:1">${m1total.toLocaleString()}</div></div>
+        <div style="font-size:30px;color:#6b7280;display:flex;align-items:center">+</div>
+        <div><div style="font-size:11px;color:#10b981;font-weight:700">🟢 M2</div><div style="font-size:40px;font-weight:900;color:#10b981;line-height:1">${m2total.toLocaleString()}</div></div>
+        <div style="font-size:30px;color:#6b7280;display:flex;align-items:center">=</div>
+        <div><div style="font-size:11px;color:#6b7280;font-weight:700">TOTAL</div><div style="font-size:40px;font-weight:900;color:#1d4ed8;line-height:1">${(m1total+m2total).toLocaleString()}</div></div>
+      </div>
+      <div style="font-size:13px;color:#6b7280">pieces produced today</div>
+    </div>
+    <hr style="border:none;border-top:2px dashed #dde3ec;margin-bottom:14px">${blocks||'<div style="text-align:center;color:#6b7280">No entries for this date.</div>'}`;
+  document.getElementById('slipModal').classList.add('open');
+}
+function printSlip(){
+  const content=document.getElementById('slipContent').innerHTML;
+  const win=window.open('','_blank','width=420,height=700');
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Summary</title><style>body{font-family:-apple-system,sans-serif;padding:14px;max-width:400px;margin:0 auto}table{width:100%;border-collapse:collapse}@media print{body{padding:4px}}</style></head><body>${content}<script>window.onload=()=>window.print()<\/script></body></html>`);
+  win.document.close();
+}
+
+// ── BULK IMPORT ──
+function renderBulkImport(){
+  const c=document.getElementById('logContent'); c.innerHTML='';
+  const info=document.createElement('div'); info.className='info-box';
+  info.innerHTML='📋 <b>Bulk Import</b> — Fill rows for past production. Select Machine per row.';
+  c.appendChild(info);
+  const res=document.createElement('div'); res.className='import-result'; res.id='importResult'; c.appendChild(res);
+  const wrap=document.createElement('div'); wrap.className='bulk-table-wrap';
+  const tbl=document.createElement('table'); tbl.className='bulk-table'; tbl.id='bulkTable';
+  tbl.innerHTML=`<thead><tr><th>Date</th><th>Time</th><th>Mach</th><th>Order</th><th>Size</th><th>Qty</th><th>Rem</th><th></th></tr></thead><tbody id="bulkBody"></tbody>`;
+  wrap.appendChild(tbl); c.appendChild(wrap);
+  const addBtn=document.createElement('button'); addBtn.className='btn-add-row'; addBtn.textContent='＋ Add Row'; addBtn.onclick=addBulkRow; c.appendChild(addBtn);
+  const saveBtn=document.createElement('button'); saveBtn.className='btn-primary amber'; saveBtn.textContent='💾 Save All'; saveBtn.onclick=saveBulkEntries; c.appendChild(saveBtn);
+  addBulkRow(); addBulkRow(); addBulkRow();
+}
+function addBulkRow(){
+  const tbody=document.getElementById('bulkBody'); if(!tbody) return;
+  const rowId='br_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
+  const tr=document.createElement('tr'); tr.id=rowId;
+  const orderOpts=orders.map(o=>`<option value="${o.id}">${o.orderNo}</option>`).join('');
+  const sizeOpts=SIZES_FULL.map(s=>`<option>${s}</option>`).join('');
+  tr.innerHTML=`<td><input type="date" class="bi_date" value="${today()}"></td><td><input type="time" class="bi_time" value="17:00"></td><td><select class="bi_mach"><option value="1" style="background:#1e3a5f;color:#3b82f6">M1</option><option value="2" style="background:#0d3328;color:#10b981">M2</option></select></td><td><select class="bi_order"><option value="">--</option>${orderOpts}</select></td><td><select class="bi_size"><option value="">--</option>${sizeOpts}</select></td><td><input type="number" class="bi_qty" placeholder="0" min="1" style="min-width:50px"></td><td><input type="text" class="bi_remark" placeholder="" style="min-width:60px"></td><td><button class="del-row" onclick="document.getElementById('${rowId}').remove()">🗑</button></td>`;
+  tbody.appendChild(tr);
+}
+function saveBulkEntries(){
+  const tbody=document.getElementById('bulkBody'); if(!tbody) return;
+  let saved=0,skipped=0;
+  tbody.querySelectorAll('tr').forEach(tr=>{
+    const date=tr.querySelector('.bi_date')?.value, time=tr.querySelector('.bi_time')?.value||'17:00';
+    const orderId=parseInt(tr.querySelector('.bi_order')?.value), size=tr.querySelector('.bi_size')?.value;
+    const qty=parseInt(tr.querySelector('.bi_qty')?.value), remark=tr.querySelector('.bi_remark')?.value.trim()||'';
+    const machine=parseInt(tr.querySelector('.bi_mach')?.value)||1;
+    if(!date||!orderId||!size||!qty||qty<=0){skipped++;return;}
+    logs.push({id:'bulk_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),date,time,orderId,size,qty,remark,machine}); saved++;
+  });
+  const box=document.getElementById('importResult');
+  if(box){box.style.display='block';box.textContent=`✅ ${saved} entries saved!${skipped?' ('+skipped+' skipped)':''}`;};
+  if(tbody){tbody.innerHTML='';addBulkRow();}
+  saveToStorage(); renderOrders();
+}
+
+// ── EXPORT / IMPORT / SETTINGS ──
+function exportBackup(){
+  const data = { version:3, exported: new Date().toISOString(), orders, logs };
+  const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'prod-backup-' + today() + '.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function importBackup(input){
+  const file = input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      // Validate file
+      if(!data.orders && !data.logs){
+        alert('❌ Invalid backup file\norders / logs data မတွေ့ဘူး');
+        input.value=''; return;
+      }
+      const inOrders = Array.isArray(data.orders) ? data.orders : [];
+      const inLogs   = Array.isArray(data.logs)   ? data.logs   : [];
+      const exportedAt = data.exported ? '\nExported: '+data.exported.replace('T',' ').slice(0,16) : '';
+      const msg = '📥 Backup Restore မလား?' + exportedAt +
+        '\n\nOrders:     ' + inOrders.length + ' items' +
+        '\nLog Entries: ' + inLogs.length   + ' items' +
+        '\n\n⚠️ လက်ရှိ data အားလုံး replace လုပ်မည်!';
+      if(!confirm(msg)){ input.value=''; return; }
+      // Restore
+      orders = inOrders;
+      logs   = inLogs;
+      saveToStorage();
+      showPage('orders');
+      renderOrders(); renderLog(); renderReport(); updateSettingsPage();
+      alert('✅ Restore အောင်မြင်!\nOrders: '+orders.length+'\nLogs: '+logs.length);
+    } catch(err){
+      alert('❌ Import မအောင်မြင်\n' + err.message);
+    }
+  };
+  reader.readAsText(file);
+  input.value = '';
+}
+
+function clearAllData(){
+  if(!confirm('⚠️ Data အားလုံး ဖျက်မလား?\n\nExport Backup လုပ်ပြီးပြီလား?')) return;
+  if(!confirm('⛔ LAST WARNING!\nData အားလုံး ပြန်မရနိုင်!\nဆက်မလား?')) return;
+  orders=[]; logs=[];
+  saveToStorage();
+  renderOrders(); renderLog(); renderReport(); updateSettingsPage();
+  alert('✅ Data အားလုံး ဖျက်ပြီးပါပြီ။');
+}
+
+function updateSettingsPage(){
+  try {
+    const bytes = (localStorage.getItem('prodtracker_orders_v2')||'').length + (localStorage.getItem('prodtracker_logs_v2')||'').length;
+    const kb = (bytes/1024).toFixed(1);
+    const sizeEl = document.getElementById('storageSizeLabel');
+    if(sizeEl) sizeEl.textContent = 'localStorage · '+kb+' KB used';
+  } catch(e){}
+
+  const lastSaved = localStorage.getItem('pt_last_saved_time');
+  const lastEl = document.getElementById('lastSavedLabel');
+  if(lastEl) lastEl.textContent = lastSaved || '(ဒီ session မှာ save လုပ်ထားပြီး)';
+
+  const totalProduced = logs.reduce((s,l)=>s+(parseInt(l.qty)||0),0);
+  const totalOrder    = orders.reduce((s,o)=>s+Object.values(o.sizes).reduce((a,b)=>a+b,0),0);
+  const el = id => document.getElementById(id);
+  if(el('settStatOrders'))  el('settStatOrders').textContent  = orders.length;
+  if(el('settStatLogs'))    el('settStatLogs').textContent    = logs.length;
+  if(el('settStatTotal'))   el('settStatTotal').textContent   = totalProduced.toLocaleString();
+  if(el('settStatBalance')) el('settStatBalance').textContent = Math.max(0,totalOrder-totalProduced).toLocaleString();
+}
+
+// Patch saveToStorage to also record save time + Firebase sync
+const _origSave = saveToStorage;
+saveToStorage = function(){
+  _origSave();
+  try { localStorage.setItem('pt_last_saved_time', new Date().toLocaleString('th-TH')); } catch(e){}
+  try { saveToFirebase(); } catch(e){}
+};
+
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+
+// ── API KEY ──
+const LS_APIKEY = 'zann_apikey';
+function loadApiKey(){ const k=localStorage.getItem(LS_APIKEY)||''; if(k) document.getElementById('apiKeyInput').value=k; updateAiStatus(); }
+function saveApiKey(){
+  const k=document.getElementById('apiKeyInput').value.trim();
+  if(!k){ showToast('❌ Enter API key first','err'); return; }
+  localStorage.setItem(LS_APIKEY,k);
+  updateAiStatus();
+  showToast('✅ API Key saved!','ok');
+}
+function toggleApiKeyVisibility(){
+  const inp=document.getElementById('apiKeyInput');
+  inp.type=inp.type==='password'?'text':'password';
+}
+function updateAiStatus(){
+  const k=localStorage.getItem(LS_APIKEY)||'';
+  const dot=document.getElementById('aiStatusDot');
+  if(dot) dot.style.background=k?'#10b981':'#6366f1';
+}
+
+// ── AI SCAN ──
+let _aiPhotoBase64='', _aiPendingOrders=[];
+function openAiScanModal(){
+  const k=localStorage.getItem(LS_APIKEY);
+  if(!k){ showToast('❌ Add API Key in Settings first','err',3000); return; }
+  _aiPhotoBase64=''; _aiPendingOrders=[];
+  document.getElementById('aiStep1').style.display='block';
+  document.getElementById('aiStep2').style.display='none';
+  document.getElementById('aiLoading').style.display='none';
+  document.getElementById('aiResult').style.display='none';
+  document.getElementById('aiPhotoPreview').style.display='none';
+  document.getElementById('aiPhotoInput').value='';
+  setAiMachine(1);
+  document.getElementById('aiScanModal').classList.add('open');
+}
+function onAiPhotoSelected(input){
+  const file=input.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    _aiPhotoBase64=e.target.result.split(',')[1];
+    document.getElementById('aiPhotoImg').src=e.target.result;
+    document.getElementById('aiPhotoPreview').style.display='block';
+    document.getElementById('aiStep2').style.display='block';
+  };
+  reader.readAsDataURL(file);
+}
+function setAiMachine(m){
+  document.getElementById('aiMachineVal').value=m;
+  const btns={1:'aiMachBtn1',2:'aiMachBtn2',0:'aiMachBtnB'};
+  const colors={1:['#dbeafe','#1d4ed8'],2:['#d1fae5','#059669'],0:['#f5f3ff','#7c3aed']};
+  Object.entries(btns).forEach(([k,id])=>{
+    const btn=document.getElementById(id);
+    if(parseInt(k)===m){
+      btn.style.background=colors[k][0]; btn.style.color=colors[k][1]; btn.style.borderColor=colors[k][1];
+    } else {
+      btn.style.background='var(--bg3)'; btn.style.color='var(--text2)'; btn.style.borderColor='var(--border2)';
+    }
+  });
+}
+async function runAiScan(){
+  if(!_aiPhotoBase64){ showToast('❌ Select a photo first','err'); return; }
+  const apiKey=localStorage.getItem(LS_APIKEY);
+  if(!apiKey){ showToast('❌ No API Key','err'); return; }
+  document.getElementById('aiStep1').style.display='none';
+  document.getElementById('aiStep2').style.display='none';
+  document.getElementById('aiLoading').style.display='block';
+  document.getElementById('aiResult').style.display='none';
+  const prompt=`You are a garment production assistant. Analyze this order sheet image and extract order information.
+
+Return ONLY a valid JSON array (no markdown, no explanation) with this exact format:
+[{"orderNo":"SHORT_NAME","style":"Polo","color":"ColorName","note":"OrderNo if visible","sizes":{"S":0,"M":0,"L":0,"XL":0,"2XL":0}}]
+
+Rules:
+- orderNo: short name from the order (school/company abbreviation)
+- style: Polo / Roundneck / JK (detect from image)
+- color: main color of the garment
+- note: include the document number like "No.2026/XXXXX" if visible
+- sizes: only include sizes with qty > 0, use the "สั่งตัด" (order qty) column
+- Support size names: 3S, 2S, SS, S, M, L, XL, 2XL, 3XL, 4XL, 5XL, 6XL, 7XL, 8XL, 9XL, 10XL, F
+- Return array even if only 1 order`;
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({
+        model:'claude-opus-4-5',
+        max_tokens:1000,
+        messages:[{role:'user',content:[
+          {type:'image',source:{type:'base64',media_type:'image/jpeg',data:_aiPhotoBase64}},
+          {type:'text',text:prompt}
+        ]}]
+      })
+    });
+    const data=await resp.json();
+    if(data.error){ throw new Error(data.error.message); }
+    const text=data.content[0].text.trim();
+    const clean=text.replace(/```json|```/g,'').trim();
+    _aiPendingOrders=JSON.parse(clean);
+    if(!Array.isArray(_aiPendingOrders)) _aiPendingOrders=[_aiPendingOrders];
+    // Assign machine
+    const m=parseInt(document.getElementById('aiMachineVal').value);
+    _aiPendingOrders.forEach(o=>{
+      if(m===1){ o.m1_used='yes'; o.m2_used='no'; }
+      else if(m===2){ o.m1_used='no'; o.m2_used='yes'; }
+      else { o.m1_used='yes'; o.m2_used='yes'; }
+    });
+    document.getElementById('aiLoading').style.display='none';
+    document.getElementById('aiResult').style.display='block';
+    document.getElementById('aiResultMsg').textContent='✅ Found '+_aiPendingOrders.length+' order'+(  _aiPendingOrders.length>1?'s':'')+' — Review & confirm';
+    document.getElementById('aiJsonPreview').textContent=JSON.stringify(_aiPendingOrders,null,2);
+  } catch(err){
+    document.getElementById('aiLoading').style.display='none';
+    document.getElementById('aiStep2').style.display='block';
+    showToast('❌ AI Error: '+err.message,'err',4000);
+  }
+}
+function aiRescan(){
+  _aiPendingOrders=[];
+  document.getElementById('aiResult').style.display='none';
+  document.getElementById('aiStep1').style.display='block';
+  document.getElementById('aiStep2').style.display='none';
+  document.getElementById('aiPhotoPreview').style.display='none';
+  document.getElementById('aiPhotoInput').value='';
+  _aiPhotoBase64='';
+}
+function aiConfirmImport(){
+  if(!_aiPendingOrders.length){ showToast('❌ No orders to import','err'); return; }
+  let added=0;
+  _aiPendingOrders.forEach(item=>{
+    if(!item.orderNo||!item.sizes) return;
+    const newOrder={
+      id:Date.now()+Math.floor(Math.random()*9999),
+      orderNo:String(item.orderNo).trim(),
+      style:String(item.style||'Polo').trim(),
+      color:String(item.color||'').trim(),
+      note:String(item.note||'').trim(),
+      m1_used:item.m1_used||'no', m1_ot:item.m1_ot||'',
+      m2_used:item.m2_used||'no', m2_ot:item.m2_ot||'',
+      sizes:{}
+    };
+    Object.entries(item.sizes).forEach(([k,v])=>{ const n=parseInt(v); if(n>0) newOrder.sizes[k]=n; });
+    if(Object.keys(newOrder.sizes).length){ orders.push(newOrder); added++; }
+  });
+  saveToStorage(); renderOrders(); updateSettingsPage();
+  closeModal('aiScanModal');
+  showToast('✅ '+added+' order'+(added>1?'s':'')+' added!','ok',2500);
+  setTimeout(()=>showPage('orders'),800);
+}
+
+// ── HELPER ──
+function getProducedTotalByOrder(orderId){
+  return logs.filter(l=>l.orderId===orderId).reduce((s,l)=>s+(parseInt(l.qty)||0),0);
+}
+function getColorHex(colorName){
+  const map={
+    'white':'#f1f5f9','black':'#1e293b','navy':'#1e3a5f','red':'#ef4444',
+    'yellow':'#fbbf24','green':'#22c55e','blue':'#3b82f6','grey':'#9ca3af',
+    'gray':'#9ca3af','orange':'#f97316','pink':'#ec4899','purple':'#a855f7',
+    'brown':'#92400e','maroon':'#9f1239','sky blue':'#38bdf8','sky':'#38bdf8',
+    'violet':'#8b5cf6','teal':'#14b8a6','lime':'#84cc16','indigo':'#6366f1',
+    'gold':'#f59e0b','silver':'#cbd5e1','cream':'#fef3c7','beige':'#fde68a',
+    'magenta':'#d946ef','cyan':'#06b6d4','coral':'#fb7185',
+  };
+  if(!colorName) return null;
+  return map[colorName.toLowerCase()] || null;
+}
+
+// ── JSON ORDER IMPORT ──
+function openJsonImportModal(){
+  document.getElementById('jsonResult').style.display='none';
+  document.getElementById('jsonPasteArea').value='';
+  document.getElementById('jsonImportModal').classList.add('open');
+}
+
+function importJsonOrders(){
+  const raw = document.getElementById('jsonPasteArea').value.trim();
+  const resEl = document.getElementById('jsonResult');
+  resEl.style.display='none';
+  if(!raw){ resEl.className='json-result err'; resEl.textContent='❌ JSON ထည့်ပါ'; resEl.style.display='block'; return; }
+  let data;
+  try{
+    data = JSON.parse(raw);
+  } catch(e){
+    resEl.className='json-result err'; resEl.textContent='❌ JSON format မမှန်ဘူး: '+e.message; resEl.style.display='block'; return;
+  }
+  if(!Array.isArray(data)) data=[data];
+  let added=0, skipped=0;
+  data.forEach(item=>{
+    if(!item.orderNo || !item.sizes){ skipped++; return; }
+    const newOrder = {
+      id: Date.now()+Math.floor(Math.random()*9999),
+      orderNo: String(item.orderNo).trim(),
+      style:   String(item.style||'Polo').trim(),
+      color:   String(item.color||'').trim(),
+      note:    String(item.note||'').trim(),
+      m1_used: item.m1_used||'no', m1_ot: item.m1_ot||'',
+      m2_used: item.m2_used||'no', m2_ot: item.m2_ot||'',
+      sizes:   {}
+    };
+    // Parse sizes — support both numeric and string values
+    Object.entries(item.sizes).forEach(([k,v])=>{
+      const n=parseInt(v); if(n>0) newOrder.sizes[k]=n;
+    });
+    if(!Object.keys(newOrder.sizes).length){ skipped++; return; }
+    orders.push(newOrder);
+    added++;
+  });
+  saveToStorage();
+  if(added>0){
+    resEl.className='json-result ok';
+    resEl.textContent='✅ '+added+' order'+(added>1?'s':'')+' ထည့်ပြီး!'+(skipped?' ('+skipped+' skipped)':'');
+    resEl.style.display='block';
+    document.getElementById('jsonPasteArea').value='';
+    renderOrders(); updateSettingsPage();
+    setTimeout(()=>{ closeModal('jsonImportModal'); showPage('orders'); },1200);
+  } else {
+    resEl.className='json-result err';
+    resEl.textContent='❌ Orders ထည့်မရဘူး။ orderNo နဲ့ sizes ပါသလား စစ်ပါ';
+    resEl.style.display='block';
+  }
+}
+
+// ── SHARE SUMMARY ──
+let _shareText = '';
+function openShareModal(){
+  const date=document.getElementById('logDate').value||today();
+  const dayLogs=logs.filter(l=>l.date===date);
+  const m1t=dayLogs.filter(l=>(l.machine||1)===1).reduce((s,l)=>s+(parseInt(l.qty)||0),0);
+  const m2t=dayLogs.filter(l=>l.machine===2).reduce((s,l)=>s+(parseInt(l.qty)||0),0);
+  let txt=`📊 Zann Production — ${fmtDate(date)}\n`;
+  txt+=`${'─'.repeat(28)}\n`;
+  txt+=`🔵 M1: ${m1t.toLocaleString()} pcs\n`;
+  txt+=`🟢 M2: ${m2t.toLocaleString()} pcs\n`;
+  txt+=`📦 TOTAL: ${(m1t+m2t).toLocaleString()} pcs\n`;
+  txt+=`${'─'.repeat(28)}\n`;
+  orders.forEach(o=>{
+    const oLogs=dayLogs.filter(l=>l.orderId===o.id); if(!oLogs.length) return;
+    const todM1=oLogs.filter(l=>(l.machine||1)===1).reduce((s,l)=>s+(parseInt(l.qty)||0),0);
+    const todM2=oLogs.filter(l=>l.machine===2).reduce((s,l)=>s+(parseInt(l.qty)||0),0);
+    const allDone=getProducedTotalByOrder(o.id);
+    const orderTot=Object.values(o.sizes).reduce((a,b)=>a+b,0);
+    txt+=`\n▸ ${o.orderNo} ${o.style} (${o.color})\n`;
+    if(todM1>0) txt+=`  M1: +${todM1.toLocaleString()}\n`;
+    if(todM2>0) txt+=`  M2: +${todM2.toLocaleString()}\n`;
+    txt+=`  Done: ${allDone.toLocaleString()} / ${orderTot.toLocaleString()}\n`;
+    // Size breakdown today
+    const sizeMap={};
+    oLogs.forEach(l=>{sizeMap[l.size]=(sizeMap[l.size]||0)+l.qty;});
+    const szLine=Object.entries(sizeMap).map(([s,q])=>`${s}:${q}`).join(' · ');
+    if(szLine) txt+=`  [${szLine}]\n`;
+  });
+  txt+=`\n✅ Powered by Zann`;
+  _shareText=txt;
+  document.getElementById('sharePreview').textContent=txt;
+  closeModal('slipModal');
+  document.getElementById('shareModal').classList.add('open');
+}
+function shareToLine(){
+  const url='https://line.me/R/share?text='+encodeURIComponent(_shareText);
+  window.open(url,'_blank');
+}
+function shareToMessenger(){
+  showToast('📋 Text copied! Paste in Messenger','ok',2500);
+  navigator.clipboard?.writeText(_shareText).catch(()=>{});
+  window.open('https://m.me/','_blank');
+}
+function shareCopyText(){
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(_shareText).then(()=>showToast('📋 Copied to clipboard!','ok')).catch(()=>{});
+  } else {
+    const ta=document.createElement('textarea');
+    ta.value=_shareText; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    showToast('📋 Copied!','ok');
+  }
+}
+function shareNative(){
+  if(navigator.share){
+    navigator.share({title:'Zann Production Summary',text:_shareText}).catch(()=>{});
+  } else {
+    shareCopyText();
+  }
+}
+
+// ── INIT ──
+loadFromStorage(); checkAuth(); loadApiKey();
+document.getElementById('logDate').value=today();
+document.getElementById('logDateLabel').textContent=fmtDate(today());
+renderOrders(); renderLog();
+setTimeout(hideSplash, 1800);
+// Firebase realtime sync
+setTimeout(initFirebaseSync, 500);
+</script>
+</body>
+</html>
