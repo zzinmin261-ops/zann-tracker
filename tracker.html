@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>အလုပ်ရက်စာရင်း &amp; ငွေစာရင်း</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<style>
+  :root{
+    --bg:#14171c;
+    --surface:#1c2129;
+    --surface2:#242a33;
+    --border:#2e3540;
+    --text:#edeef0;
+    --muted:#8b93a1;
+    --amber:#e8a23d;   /* OT */
+    --blue:#5b8def;    /* Day shift */
+    --teal:#3da8a0;    /* Savings */
+    --coral:#e8654a;   /* Expense/Debt */
+    --green:#4caf7d;   /* positive */
+    --pink:#e8739e;    /* accent */
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Myanmar Text','Pyidaungsu','Noto Sans Myanmar',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    padding-bottom:88px;
+    min-height:100vh;
+  }
+  .topbar{
+    padding:22px 18px 16px;
+    background:linear-gradient(180deg,#1a1e25,#14171c);
+    border-bottom:1px solid var(--border);
+    position:relative;
+    overflow:hidden;
+  }
+  .topbar::before{
+    content:"";
+    position:absolute;
+    top:-40px; right:-40px;
+    width:160px;height:160px;
+    border-radius:50%;
+    background:radial-gradient(circle,rgba(232,115,158,0.16),rgba(232,162,61,0.10) 55%,transparent 75%);
+  }
+  .title-row{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .title-row h1{font-size:20px;margin:0;font-weight:700;letter-spacing:.2px;}
+  .title-row .sub{font-size:12px;color:var(--muted);margin-top:3px;}
+  .punch{
+    display:flex;align-items:center;gap:10px;
+    background:var(--surface);
+    border:1px dashed rgba(232,115,158,0.4);
+    border-radius:10px;
+    padding:8px 12px;
+    font-variant-numeric: tabular-nums;
+  }
+  .punch .dot{width:8px;height:8px;border-radius:50%;background:var(--pink);box-shadow:0 0 8px var(--pink);}
+  .punch .time{font-size:15px;font-weight:700;letter-spacing:.5px;}
+  .punch .date{font-size:11px;color:var(--muted);}
+
+  .tabs{
+    display:flex;
+    gap:6px;
+    padding:12px 14px 0;
+    overflow-x:auto;
+  }
+  .tab-btn{
+    flex:0 0 auto;
+    background:var(--surface);
+    border:1px solid var(--border);
+    color:var(--muted);
+    padding:9px 14px;
+    border-radius:999px;
+    font-size:13px;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .tab-btn.active{
+    background:var(--surface2);
+    color:var(--text);
+    border-color:var(--pink);
+    box-shadow:0 0 0 1px rgba(232,115,158,0.25) inset;
+    font-weight:600;
+  }
+
+  .page{padding:16px;display:none;}
+  .page.active{display:block;}
+
+  .card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:14px;
+    margin-bottom:14px;
+  }
+  .card h3{margin:0 0 12px;font-size:14px;color:var(--muted);font-weight:600;letter-spacing:.3px;}
+
+  .row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;}
+  .field{flex:1;min-width:120px;display:flex;flex-direction:column;gap:4px;}
+  label{font-size:11px;color:var(--muted);}
+  input,select,textarea{
+    background:var(--surface2);
+    border:1px solid var(--border);
+    color:var(--text);
+    border-radius:8px;
+    padding:9px 10px;
+    font-size:14px;
+    font-family:inherit;
+    width:100%;
+  }
+  textarea{resize:vertical;min-height:36px;}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--blue);}
+
+  .seg{display:flex;background:var(--surface2);border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+  .seg button{
+    flex:1;padding:9px 6px;background:transparent;border:none;color:var(--muted);
+    font-size:13px;cursor:pointer;font-family:inherit;
+  }
+  .seg button.on{background:var(--surface);color:var(--text);font-weight:700;}
+
+  .btn{
+    width:100%;
+    padding:11px;
+    border-radius:9px;
+    border:none;
+    font-size:14px;
+    font-weight:700;
+    cursor:pointer;
+    font-family:inherit;
+  }
+  .btn-primary{background:linear-gradient(135deg,var(--blue),var(--pink));color:#101116;}
+  .btn-pink{background:var(--pink);color:#1a0f14;}
+  .btn-amber{background:var(--amber);color:#0e1116;}
+  .btn-teal{background:var(--teal);color:#0e1116;}
+  .btn-coral{background:var(--coral);color:#0e1116;}
+
+  .entry{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:10px 0;border-bottom:1px solid var(--border);
+    gap:10px;
+  }
+  .entry:last-child{border-bottom:none;}
+  .entry-left{display:flex;flex-direction:column;gap:2px;}
+  .entry-title{font-size:14px;font-weight:600;}
+  .entry-sub{font-size:11.5px;color:var(--muted);}
+  .entry-amt{font-size:14px;font-weight:700;white-space:nowrap;}
+  .tag{
+    display:inline-block;font-size:10px;padding:2px 7px;border-radius:999px;
+    margin-right:6px;font-weight:700;
+  }
+  .tag-day{background:rgba(91,141,239,.15);color:var(--blue);}
+  .tag-ot{background:rgba(232,162,61,.15);color:var(--amber);}
+  .tag-off{background:rgba(139,147,161,.15);color:var(--muted);}
+  .del{background:none;border:none;color:#5a6270;font-size:16px;cursor:pointer;padding:2px 6px;}
+  .del:active{color:var(--coral);}
+
+  .empty{color:var(--muted);font-size:13px;text-align:center;padding:14px 0;}
+
+  .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .stat{
+    background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px;
+  }
+  .stat .v{font-size:19px;font-weight:800;}
+  .stat .l{font-size:11px;color:var(--muted);margin-top:2px;}
+  .stat.blue .v{color:var(--blue);}
+  .stat.amber .v{color:var(--amber);}
+  .stat.teal .v{color:var(--teal);}
+  .stat.coral .v{color:var(--coral);}
+  .stat.green .v{color:var(--green);}
+  .stat.pink .v{color:var(--pink);}
+
+  .bottom-nav{
+    position:fixed;bottom:0;left:0;right:0;
+    background:#171b21;border-top:1px solid var(--border);
+    display:flex;padding:6px 4px calc(6px + env(safe-area-inset-bottom));
+  }
+  .nav-btn{
+    flex:1;background:none;border:none;color:var(--muted);
+    display:flex;flex-direction:column;align-items:center;gap:2px;
+    font-size:10.5px;padding:6px 0;cursor:pointer;font-family:inherit;
+  }
+  .nav-btn .ic{font-size:18px;}
+  .nav-btn.active{color:var(--pink);}
+
+  select.person-select{max-width:130px;}
+  .month-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+  .month-nav button{background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 10px;font-family:inherit;cursor:pointer;}
+  .month-nav .m{font-size:14px;font-weight:700;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="title-row">
+    <div>
+      <h1>အလုပ်ချိန် &amp; ငွေစာရင်း</h1>
+      <div class="sub" id="todayLabel">—</div>
+    </div>
+    <div class="punch" onclick="refreshData()" style="cursor:pointer;">
+      <span class="dot"></span>
+      <div>
+        <div class="time" id="clockTime">--:--</div>
+        <div class="date" id="clockDate">—</div>
+      </div>
+      <span style="font-size:14px;color:var(--muted);">⟳</span>
+    </div>
+  </div>
+  <div id="syncStatus" style="display:none;margin-top:10px;font-size:11.5px;color:var(--amber);background:rgba(232,162,61,.12);border:1px solid rgba(232,162,61,.3);border-radius:8px;padding:7px 10px;"></div>
+</div>
+
+<div class="tabs" id="tabs">
+  <button class="tab-btn active" data-tab="work">⏱ အလုပ်ချိန်</button>
+  <button class="tab-btn" data-tab="expense">💸 စရိတ်</button>
+  <button class="tab-btn" data-tab="savings">🏦 စုငွေ</button>
+  <button class="tab-btn" data-tab="debt">📒 အကြွေး</button>
+  <button class="tab-btn" data-tab="dash">📊 Dashboard</button>
+  <button class="tab-btn" data-tab="settings">⚙️ Setting</button>
+</div>
+
+<!-- WORK PAGE -->
+<div class="page active" id="page-work">
+  <div class="card">
+    <h3>အလုပ်ချိန် မှတ်မည်</h3>
+    <div class="row">
+      <div class="field">
+        <label>ရက်စွဲ</label>
+        <input type="date" id="w-date">
+      </div>
+      <div class="field">
+        <label>ဘယ်သူ</label>
+        <select id="w-person" class="person-select"></select>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>အမျိုးအစား</label>
+        <div class="seg" id="w-type">
+          <button data-v="day" class="on">Day</button>
+          <button data-v="ot">OT</button>
+          <button data-v="off">ပိတ်ရက်</button>
+        </div>
+      </div>
+    </div>
+    <div class="row" id="w-hours-row">
+      <div class="field">
+        <label id="w-qty-label">ရက်အရေအတွက်</label>
+        <input type="number" step="0.5" id="w-days" placeholder="ဥပမာ 1" value="1">
+      </div>
+      <div class="field">
+        <label id="w-rate-label">၁ရက်ကို Baht</label>
+        <input type="number" step="1" id="w-rate" placeholder="ဥပမာ 350">
+      </div>
+    </div>
+    <div class="row" id="w-note-row">
+      <div class="field">
+        <label>မှတ်ချက် (ဖြစ်နိုင်)</label>
+        <input type="text" id="w-note" placeholder="မှတ်ချက်">
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="addWork()">➕ မှတ်မည်</button>
+  </div>
+
+  <div class="card">
+    <div class="month-nav">
+      <button onclick="shiftMonth(-1)">←</button>
+      <div class="m" id="workMonthLabel">—</div>
+      <button onclick="shiftMonth(1)">→</button>
+    </div>
+    <div class="stat-grid" style="margin-bottom:12px;">
+      <div class="stat blue"><div class="v" id="sumDayD">0</div><div class="l">Day ရက်</div></div>
+      <div class="stat amber"><div class="v" id="sumOtD">0</div><div class="l">OT နာရီ</div></div>
+      <div class="stat pink"><div class="v" id="sumDayPay">0</div><div class="l">Day လုပ်ခ (Baht)</div></div>
+      <div class="stat pink"><div class="v" id="sumOtPay">0</div><div class="l">OT လုပ်ခ (Baht)</div></div>
+      <div class="stat" style="grid-column:span 2;"><div class="v" id="sumOffD">0</div><div class="l">ပိတ်ရက် ရေတွက်</div></div>
+    </div>
+    <h3>ဒီလ မှတ်တမ်း</h3>
+    <div id="workList"></div>
+  </div>
+</div>
+
+<!-- EXPENSE PAGE -->
+<div class="page" id="page-expense">
+  <div class="card">
+    <h3>တစ်နေ့စရိတ် မှတ်မည်</h3>
+    <div class="row">
+      <div class="field">
+        <label>ရက်စွဲ</label>
+        <input type="date" id="e-date">
+      </div>
+      <div class="field">
+        <label>ဘယ်သူ</label>
+        <select id="e-person" class="person-select"></select>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>အမျိုးအစား</label>
+        <select id="e-cat">
+          <option>အစားအစာ</option>
+          <option>အိမ်ငှား</option>
+          <option>သွားလာစရိတ်</option>
+          <option>ဖုန်း/နက်</option>
+          <option>ကျန်းမာရေး</option>
+          <option>ပို့ငွေ (မိသားစုထံ)</option>
+          <option>အခြား</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>ပမာဏ (Baht)</label>
+        <input type="number" step="1" id="e-amt" placeholder="0">
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>မှတ်ချက်</label>
+        <input type="text" id="e-note" placeholder="မှတ်ချက်">
+      </div>
+    </div>
+    <button class="btn btn-coral" onclick="addExpense()">➕ မှတ်မည်</button>
+  </div>
+
+  <div class="card">
+    <div class="month-nav">
+      <button onclick="shiftMonth(-1)">←</button>
+      <div class="m" id="expMonthLabel">—</div>
+      <button onclick="shiftMonth(1)">→</button>
+    </div>
+    <div class="stat-grid" style="margin-bottom:12px;">
+      <div class="stat coral" style="grid-column:span 2;"><div class="v" id="sumExp">0</div><div class="l">ဒီလ စရိတ်စုစုပေါင်း (Baht)</div></div>
+    </div>
+    <h3>ဒီလ မှတ်တမ်း</h3>
+    <div id="expList"></div>
+  </div>
+</div>
+
+<!-- SAVINGS PAGE -->
+<div class="page" id="page-savings">
+  <div class="card">
+    <h3>စုငွေ မှတ်မည်</h3>
+    <div class="row">
+      <div class="field">
+        <label>ရက်စွဲ</label>
+        <input type="date" id="s-date">
+      </div>
+      <div class="field">
+        <label>ဘယ်သူ</label>
+        <select id="s-person" class="person-select"></select>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>အမျိုးအစား</label>
+        <div class="seg" id="s-type">
+          <button data-v="in" class="on">စုငွေထည့်</button>
+          <button data-v="out">ထုတ်ယူ</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>ပမာဏ (Baht)</label>
+        <input type="number" step="1" id="s-amt" placeholder="0">
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>မှတ်ချက်</label>
+        <input type="text" id="s-note" placeholder="မှတ်ချက်">
+      </div>
+    </div>
+    <button class="btn btn-teal" onclick="addSaving()">➕ မှတ်မည်</button>
+  </div>
+
+  <div class="card">
+    <div class="stat-grid" style="margin-bottom:12px;">
+      <div class="stat teal" style="grid-column:span 2;"><div class="v" id="sumSavings">0</div><div class="l">လက်ကျန် စုငွေစုစုပေါင်း (Baht)</div></div>
+    </div>
+    <h3>မှတ်တမ်းအားလုံး</h3>
+    <div id="savList"></div>
+  </div>
+</div>
+
+<!-- DEBT PAGE -->
+<div class="page" id="page-debt">
+  <div class="card">
+    <h3>အကြွေး မှတ်မည်</h3>
+    <div class="row">
+      <div class="field">
+        <label>ရက်စွဲ</label>
+        <input type="date" id="d-date">
+      </div>
+      <div class="field">
+        <label>ဘယ်သူ</label>
+        <select id="d-person" class="person-select"></select>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>အမျိုးအစား</label>
+        <div class="seg" id="d-type">
+          <button data-v="borrow" class="on">ငွေချေးရသည်</button>
+          <button data-v="repay">ပြန်ဆပ်သည်</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>ပမာဏ (Baht)</label>
+        <input type="number" step="1" id="d-amt" placeholder="0">
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>ဘယ်သူနဲ့</label>
+        <input type="text" id="d-with" placeholder="ဥပမာ - မိတ်ဆွေ / ဆိုင်">
+      </div>
+      <div class="field">
+        <label>မှတ်ချက်</label>
+        <input type="text" id="d-note" placeholder="မှတ်ချက်">
+      </div>
+    </div>
+    <button class="btn btn-amber" onclick="addDebt()">➕ မှတ်မည်</button>
+  </div>
+
+  <div class="card">
+    <div class="stat-grid" style="margin-bottom:12px;">
+      <div class="stat coral"><div class="v" id="sumDebtOwe">0</div><div class="l">ကျန်ရှိအကြွေး (Baht)</div></div>
+      <div class="stat green"><div class="v" id="sumDebtPaid">0</div><div class="l">ပြန်ဆပ်ပြီး (Baht)</div></div>
+    </div>
+    <h3>မှတ်တမ်းအားလုံး</h3>
+    <div id="debtList"></div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div class="page" id="page-dash">
+  <div class="card">
+    <div class="month-nav">
+      <button onclick="shiftMonth(-1)">←</button>
+      <div class="m" id="dashMonthLabel">—</div>
+      <button onclick="shiftMonth(1)">→</button>
+    </div>
+    <h3>ဒီလ အနှစ်ချုပ်</h3>
+    <div class="stat-grid">
+      <div class="stat blue"><div class="v" id="dashDayD">0</div><div class="l">Day ရက်</div></div>
+      <div class="stat amber"><div class="v" id="dashOtD">0</div><div class="l">OT နာရီ</div></div>
+      <div class="stat pink"><div class="v" id="dashPay">0</div><div class="l">လုပ်ခ စုစုပေါင်း (Baht)</div></div>
+      <div class="stat coral"><div class="v" id="dashExp">0</div><div class="l">စရိတ် (Baht)</div></div>
+      <div class="stat teal" style="grid-column:span 2;"><div class="v" id="dashSavAdded">0</div><div class="l">ဒီလ စုငွေထည့်</div></div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>လက်ရှိအခြေအနေ (Overall)</h3>
+    <div class="stat-grid">
+      <div class="stat teal"><div class="v" id="dashSavTotal">0</div><div class="l">စုငွေ လက်ကျန်</div></div>
+      <div class="stat coral"><div class="v" id="dashDebtTotal">0</div><div class="l">ကျန်အကြွေး</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS -->
+<div class="page" id="page-settings">
+  <div class="card">
+    <h3>နာမည် ချိန်ညှိမည်</h3>
+    <div class="row">
+      <div class="field">
+        <label>ပုဂ္ဂိုလ် ၁</label>
+        <input type="text" id="set-name1">
+      </div>
+      <div class="field">
+        <label>ပုဂ္ဂိုလ် ၂</label>
+        <input type="text" id="set-name2">
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="saveNames()">✔ သိမ်းမည်</button>
+  </div>
+  <div class="card">
+    <h3>Data</h3>
+    <button class="btn btn-coral" onclick="clearAll()">🗑 အားလုံး ဖျက်မည်</button>
+  </div>
+</div>
+
+<div class="bottom-nav" id="bottomNav">
+  <button class="nav-btn active" data-tab="work"><span class="ic">⏱</span>အလုပ်</button>
+  <button class="nav-btn" data-tab="expense"><span class="ic">💸</span>စရိတ်</button>
+  <button class="nav-btn" data-tab="savings"><span class="ic">🏦</span>စုငွေ</button>
+  <button class="nav-btn" data-tab="debt"><span class="ic">📒</span>အကြွေး</button>
+  <button class="nav-btn" data-tab="dash"><span class="ic">📊</span>Dashboard</button>
+</div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyAgGLpcNQffdObYqFG5MFL5R5wh4B2vRLE",
+  authDomain: "family-80d5d.firebaseapp.com",
+  databaseURL: "https://family-80d5d-default-rtdb.firebaseio.com",
+  projectId: "family-80d5d",
+  storageBucket: "family-80d5d.firebasestorage.app",
+  messagingSenderId: "1021916608018",
+  appId: "1:1021916608018:web:9324b7511d14c8837e0acb"
+};
+let fbAvailable = false;
+let dataRef = null;
+try{
+  if(typeof firebase !== 'undefined'){
+    firebase.initializeApp(firebaseConfig);
+    dataRef = firebase.database().ref('trackerData');
+    fbAvailable = true;
+  } else {
+    console.error('Firebase SDK failed to load (offline?)');
+  }
+}catch(e){
+  console.error('Firebase init failed', e);
+}
+let firstLoad = true;
+let data = null;
+let hasRealData = false; // true once we've received an actual value from Firebase at least once
+const LOCAL_BACKUP_KEY = 'trackerData_backup_v1';
+let curMonth = new Date(); curMonth.setDate(1);
+
+function emptyData(){
+  return { names:['Phyo Phyo','Zin Min Htet'], work:[], expense:[], savings:[], debt:[] };
+}
+function normalizeData(val){
+  const d = val;
+  d.work = d.work || [];
+  d.expense = d.expense || [];
+  d.savings = d.savings || [];
+  d.debt = d.debt || [];
+  d.names = d.names || ['Phyo Phyo','Zin Min Htet'];
+  if(d.names[0]==='ကျွန်တော်' && d.names[1]==='ကျွန်မ'){
+    d.names = ['Phyo Phyo','Zin Min Htet'];
+  }
+  return d;
+}
+function loadLocalBackup(){
+  try{
+    const raw = localStorage.getItem(LOCAL_BACKUP_KEY);
+    if(raw) return normalizeData(JSON.parse(raw));
+  }catch(e){ console.error('backup read failed', e); }
+  return null;
+}
+function saveLocalBackup(){
+  try{ localStorage.setItem(LOCAL_BACKUP_KEY, JSON.stringify(data)); }catch(e){ console.error('backup write failed', e); }
+}
+function setSyncStatus(state){
+  // state: 'ok' | 'error' | 'offline' | 'local'
+  const el = document.getElementById('syncStatus');
+  if(!el) return;
+  if(state==='ok'){ el.style.display='none'; return; }
+  el.style.display='block';
+  if(state==='local'){
+    el.textContent = '⚠ Server နဲ့ ချိတ်ဆက်၍မရပါ (အင်တာနက် စစ်ပါ) — ဒီစက်ထဲက data ကိုပဲ ကြည့်/ထည့်နေပါတယ်၊ ချိတ်ဆက်ပြီးရင် refresh လုပ်ပါ';
+    return;
+  }
+  el.textContent = state==='offline'
+    ? '⚠ အင်တာနက် မချိတ်ဆက်နိုင်ပါ — နောက်ဆုံး သိမ်းထားတဲ့ data ကို ပြထားပါတယ်'
+    : '⚠ Server နဲ့ ချိတ်ဆက်မှု ပြဿနာ — နောက်ဆုံး သိမ်းထားတဲ့ data ကို ပြထားပါတယ်';
+}
+
+function initRealtime(){
+  return new Promise((resolve)=>{
+    // Show last-known data immediately so a refresh never looks empty while we wait on the network.
+    const backup = loadLocalBackup();
+    if(backup){
+      data = backup;
+      firstLoad = false;
+      resolve();
+    }
+
+    if(!fbAvailable){
+      // Firebase SDK never loaded (e.g. no internet when the page opened). Run local-only.
+      if(!data){ data = emptyData(); }
+      setSyncStatus('local');
+      if(firstLoad){ firstLoad = false; resolve(); }
+      return;
+    }
+
+    dataRef.on('value', snap=>{
+      const val = snap.val();
+      if(val){
+        data = normalizeData(val);
+        hasRealData = true;
+        saveLocalBackup();
+        setSyncStatus('ok');
+      } else if(!hasRealData){
+        // Genuinely empty database (real first-time use), not an error.
+        data = data || emptyData();
+        hasRealData = true;
+      }
+      if(firstLoad){
+        firstLoad = false;
+        resolve();
+      } else {
+        populatePersonSelects();
+        renderAll();
+      }
+    }, err=>{
+      console.error(err);
+      // Never overwrite good local/backup data with an empty structure on a read error.
+      if(!data){ data = emptyData(); }
+      setSyncStatus('error');
+      if(firstLoad){
+        firstLoad = false;
+        resolve();
+      }
+    });
+  });
+}
+async function saveData(){
+  saveLocalBackup();
+  if(!fbAvailable){
+    setSyncStatus('local');
+    return;
+  }
+  try{
+    await dataRef.set(data);
+    setSyncStatus('ok');
+  }catch(e){
+    console.error(e);
+    setSyncStatus('offline');
+    alert('Sync မအောင်မြင်ပါ - internet စစ်ကြည့်ပါ။ Data ကို ဒီစက်ထဲမှာ သိမ်းထားပါတယ်၊ ချိတ်ဆက်ပြီးရင် ပြန်ညှိပေးပါမယ်။');
+  }
+}
+async function refreshData(){
+  if(!fbAvailable){ location.reload(); return; }
+  renderAll();
+}
+
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+function todayStr(){
+  const d=new Date();
+  const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+function fmt(n){ return Math.round(n).toLocaleString(); }
+function myMonthLabel(d){
+  const months=['ဇန်နဝါရီ','ဖေဖော်ဝါရီ','မတ်','ဧပြီ','မေ','ဇွန်','ဇူလိုင်','သြဂုတ်','စက်တင်ဘာ','အောက်တိုဘာ','နိုဝင်ဘာ','ဒီဇင်ဘာ'];
+  return months[d.getMonth()]+' '+d.getFullYear();
+}
+function inCurMonth(dateStr){
+  const d = new Date(dateStr);
+  return d.getFullYear()===curMonth.getFullYear() && d.getMonth()===curMonth.getMonth();
+}
+function shiftMonth(delta){
+  curMonth.setMonth(curMonth.getMonth()+delta);
+  renderAll();
+}
+
+function populatePersonSelects(){
+  const selects = ['w-person','e-person','s-person','d-person'];
+  selects.forEach(id=>{
+    const sel = document.getElementById(id);
+    sel.innerHTML = data.names.map(n=>`<option value="${n}">${n}</option>`).join('');
+  });
+  document.getElementById('set-name1').value = data.names[0];
+  document.getElementById('set-name2').value = data.names[1];
+}
+
+function saveNames(){
+  const n1 = document.getElementById('set-name1').value.trim() || 'ကျွန်တော်';
+  const n2 = document.getElementById('set-name2').value.trim() || 'ကျွန်မ';
+  data.names = [n1,n2];
+  saveData();
+  populatePersonSelects();
+  renderAll();
+  alert('သိမ်းပြီးပါပြီ');
+}
+
+function clearAll(){
+  if(confirm('Data အားလုံး ဖျက်မှာ သေချာပါသလား?')){
+    data = { names:data.names, work:[], expense:[], savings:[], debt:[] };
+    saveData();
+    renderAll();
+  }
+}
+
+// ---- Segmented control helper ----
+function setupSeg(containerId){
+  const c = document.getElementById(containerId);
+  c.querySelectorAll('button').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      c.querySelectorAll('button').forEach(x=>x.classList.remove('on'));
+      b.classList.add('on');
+      if(containerId==='w-type'){
+        const v = b.dataset.v;
+        document.getElementById('w-hours-row').style.display = (v==='off') ? 'none':'flex';
+        const qtyLabel = document.getElementById('w-qty-label');
+        const rateLabel = document.getElementById('w-rate-label');
+        const qtyInput = document.getElementById('w-days');
+        const rateInput = document.getElementById('w-rate');
+        if(v==='ot'){
+          qtyLabel.textContent = 'နာရီ အရေအတွက်';
+          rateLabel.textContent = '၁နာရီကို Baht';
+          qtyInput.placeholder = 'ဥပမာ 3';
+          qtyInput.step = '0.5';
+          rateInput.placeholder = 'ဥပမာ 45';
+        } else {
+          qtyLabel.textContent = 'ရက်အရေအတွက်';
+          rateLabel.textContent = '၁ရက်ကို Baht';
+          qtyInput.placeholder = 'ဥပမာ 1';
+          qtyInput.step = '0.5';
+          rateInput.placeholder = 'ဥပမာ 350';
+        }
+      }
+    });
+  });
+}
+function getSeg(containerId){
+  return document.getElementById(containerId).querySelector('button.on').dataset.v;
+}
+
+// ---- Add functions ----
+function addWork(){
+  const date = document.getElementById('w-date').value || todayStr();
+  const person = document.getElementById('w-person').value;
+  const type = getSeg('w-type');
+  const days = type==='off' ? 0 : (parseFloat(document.getElementById('w-days').value)||0);
+  const rate = type==='off' ? 0 : (parseFloat(document.getElementById('w-rate').value)||0);
+  const pay = days*rate;
+  const unit = type==='ot' ? 'နာရီ' : 'ရက်';
+  const note = document.getElementById('w-note').value.trim();
+  if(type!=='off' && days<=0){ alert(type==='ot' ? 'နာရီ ထည့်ပါ' : 'ရက်အရေအတွက် ထည့်ပါ'); return; }
+  data.work.push({id:uid(),date,person,type,days,rate,pay,unit,note});
+  saveData();
+  document.getElementById('w-days').value= type==='ot' ? '' : '1';
+  document.getElementById('w-rate').value='';
+  document.getElementById('w-note').value='';
+  renderAll();
+}
+function addExpense(){
+  const date = document.getElementById('e-date').value || todayStr();
+  const person = document.getElementById('e-person').value;
+  const cat = document.getElementById('e-cat').value;
+  const amt = parseFloat(document.getElementById('e-amt').value)||0;
+  const note = document.getElementById('e-note').value.trim();
+  if(amt<=0){ alert('ပမာဏ ထည့်ပါ'); return; }
+  data.expense.push({id:uid(),date,person,cat,amt,note});
+  saveData();
+  document.getElementById('e-amt').value='';
+  document.getElementById('e-note').value='';
+  renderAll();
+}
+function addSaving(){
+  const date = document.getElementById('s-date').value || todayStr();
+  const person = document.getElementById('s-person').value;
+  const type = getSeg('s-type');
+  const amt = parseFloat(document.getElementById('s-amt').value)||0;
+  const note = document.getElementById('s-note').value.trim();
+  if(amt<=0){ alert('ပမာဏ ထည့်ပါ'); return; }
+  data.savings.push({id:uid(),date,person,type,amt,note});
+  saveData();
+  document.getElementById('s-amt').value='';
+  document.getElementById('s-note').value='';
+  renderAll();
+}
+function addDebt(){
+  const date = document.getElementById('d-date').value || todayStr();
+  const person = document.getElementById('d-person').value;
+  const type = getSeg('d-type');
+  const amt = parseFloat(document.getElementById('d-amt').value)||0;
+  const withWhom = document.getElementById('d-with').value.trim();
+  const note = document.getElementById('d-note').value.trim();
+  if(amt<=0){ alert('ပမာဏ ထည့်ပါ'); return; }
+  data.debt.push({id:uid(),date,person,type,amt,withWhom,note});
+  saveData();
+  document.getElementById('d-amt').value='';
+  document.getElementById('d-with').value='';
+  document.getElementById('d-note').value='';
+  renderAll();
+}
+
+function delItem(list, id){
+  data[list] = data[list].filter(x=>x.id!==id);
+  saveData();
+  renderAll();
+}
+
+// ---- Rendering ----
+function renderWork(){
+  document.getElementById('workMonthLabel').textContent = myMonthLabel(curMonth);
+  const items = data.work.filter(w=>inCurMonth(w.date)).sort((a,b)=>b.date.localeCompare(a.date));
+  let dayD=0, otD=0, offD=0, dayPay=0, otPay=0;
+  items.forEach(w=>{
+    if(w.type==='day'){ dayD+=w.days; dayPay+=(w.pay||0); }
+    else if(w.type==='ot'){ otD+=w.days; otPay+=(w.pay||0); }
+    else offD+=1;
+  });
+  document.getElementById('sumDayD').textContent = fmt(dayD);
+  document.getElementById('sumOtD').textContent = fmt(otD);
+  document.getElementById('sumDayPay').textContent = fmt(dayPay);
+  document.getElementById('sumOtPay').textContent = fmt(otPay);
+  document.getElementById('sumOffD').textContent = offD;
+
+  const listEl = document.getElementById('workList');
+  if(items.length===0){ listEl.innerHTML='<div class="empty">မှတ်တမ်းမရှိသေးပါ</div>'; return; }
+  listEl.innerHTML = items.map(w=>{
+    const tagClass = w.type==='day'?'tag-day':w.type==='ot'?'tag-ot':'tag-off';
+    const tagText = w.type==='day'?'Day':w.type==='ot'?'OT':'ပိတ်ရက်';
+    const detailText = w.type==='off' ? '' : `${w.days} ${w.unit||'ရက်'} × ${fmt(w.rate||0)} = ${fmt(w.pay||0)} Baht`;
+    return `<div class="entry">
+      <div class="entry-left">
+        <div class="entry-title"><span class="tag ${tagClass}">${tagText}</span>${w.person}</div>
+        <div class="entry-sub">${w.date}${w.note? ' · '+w.note:''}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div class="entry-amt">${detailText}</div>
+        <button class="del" onclick="delItem('work','${w.id}')">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderExpense(){
+  document.getElementById('expMonthLabel').textContent = myMonthLabel(curMonth);
+  const items = data.expense.filter(e=>inCurMonth(e.date)).sort((a,b)=>b.date.localeCompare(a.date));
+  const total = items.reduce((s,e)=>s+e.amt,0);
+  document.getElementById('sumExp').textContent = fmt(total);
+  const listEl = document.getElementById('expList');
+  if(items.length===0){ listEl.innerHTML='<div class="empty">မှတ်တမ်းမရှိသေးပါ</div>'; return; }
+  listEl.innerHTML = items.map(e=>`<div class="entry">
+      <div class="entry-left">
+        <div class="entry-title">${e.cat} · ${e.person}</div>
+        <div class="entry-sub">${e.date}${e.note? ' · '+e.note:''}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div class="entry-amt" style="color:var(--coral)">-${fmt(e.amt)}</div>
+        <button class="del" onclick="delItem('expense','${e.id}')">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+function renderSavings(){
+  const items = [...data.savings].sort((a,b)=>b.date.localeCompare(a.date));
+  const total = data.savings.reduce((s,x)=> s + (x.type==='in'? x.amt : -x.amt), 0);
+  document.getElementById('sumSavings').textContent = fmt(total);
+  const listEl = document.getElementById('savList');
+  if(items.length===0){ listEl.innerHTML='<div class="empty">မှတ်တမ်းမရှိသေးပါ</div>'; return; }
+  listEl.innerHTML = items.map(s=>`<div class="entry">
+      <div class="entry-left">
+        <div class="entry-title">${s.type==='in'?'ထည့်':'ထုတ်'} · ${s.person}</div>
+        <div class="entry-sub">${s.date}${s.note? ' · '+s.note:''}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div class="entry-amt" style="color:${s.type==='in'?'var(--teal)':'var(--coral)'}">${s.type==='in'?'+':'-'}${fmt(s.amt)}</div>
+        <button class="del" onclick="delItem('savings','${s.id}')">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+function renderDebt(){
+  const items = [...data.debt].sort((a,b)=>b.date.localeCompare(a.date));
+  const owe = data.debt.reduce((s,x)=> s + (x.type==='borrow'? x.amt : -x.amt), 0);
+  const paid = data.debt.filter(x=>x.type==='repay').reduce((s,x)=>s+x.amt,0);
+  document.getElementById('sumDebtOwe').textContent = fmt(Math.max(owe,0));
+  document.getElementById('sumDebtPaid').textContent = fmt(paid);
+  const listEl = document.getElementById('debtList');
+  if(items.length===0){ listEl.innerHTML='<div class="empty">မှတ်တမ်းမရှိသေးပါ</div>'; return; }
+  listEl.innerHTML = items.map(d=>`<div class="entry">
+      <div class="entry-left">
+        <div class="entry-title">${d.type==='borrow'?'ချေးရသည်':'ပြန်ဆပ်'} · ${d.person}${d.withWhom? ' · '+d.withWhom:''}</div>
+        <div class="entry-sub">${d.date}${d.note? ' · '+d.note:''}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div class="entry-amt" style="color:${d.type==='borrow'?'var(--coral)':'var(--green)'}">${d.type==='borrow'?'+':'-'}${fmt(d.amt)}</div>
+        <button class="del" onclick="delItem('debt','${d.id}')">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+function renderDash(){
+  document.getElementById('dashMonthLabel').textContent = myMonthLabel(curMonth);
+  const workM = data.work.filter(w=>inCurMonth(w.date));
+  const dayD = workM.filter(w=>w.type==='day').reduce((s,w)=>s+w.days,0);
+  const otD = workM.filter(w=>w.type==='ot').reduce((s,w)=>s+w.days,0);
+  const totalPay = workM.reduce((s,w)=>s+(w.pay||0),0);
+  const expM = data.expense.filter(e=>inCurMonth(e.date)).reduce((s,e)=>s+e.amt,0);
+  const savAdded = data.savings.filter(s=>inCurMonth(s.date) && s.type==='in').reduce((s,x)=>s+x.amt,0);
+  document.getElementById('dashDayD').textContent = fmt(dayD);
+  document.getElementById('dashOtD').textContent = fmt(otD);
+  document.getElementById('dashPay').textContent = fmt(totalPay);
+  document.getElementById('dashExp').textContent = fmt(expM);
+  document.getElementById('dashSavAdded').textContent = fmt(savAdded);
+
+  const savTotal = data.savings.reduce((s,x)=> s + (x.type==='in'? x.amt : -x.amt), 0);
+  const debtTotal = data.debt.reduce((s,x)=> s + (x.type==='borrow'? x.amt : -x.amt), 0);
+  document.getElementById('dashSavTotal').textContent = fmt(savTotal);
+  document.getElementById('dashDebtTotal').textContent = fmt(Math.max(debtTotal,0));
+}
+
+function renderAll(){
+  renderWork();
+  renderExpense();
+  renderSavings();
+  renderDebt();
+  renderDash();
+}
+
+// ---- Tabs ----
+function switchTab(tab){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+tab).classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
+}
+document.querySelectorAll('.tab-btn, .nav-btn').forEach(b=>{
+  b.addEventListener('click', ()=>switchTab(b.dataset.tab));
+});
+
+// ---- Clock ----
+function tickClock(){
+  const d = new Date();
+  const days=['တနင်္ဂနွေ','တနင်္လာ','အင်္ဂါ','ဗုဒ္ဓဟူး','ကြာသပတေး','သောကြာ','စနေ'];
+  const months=['ဇန်','ဖေ','မတ်','ဧပြီ','မေ','ဇွန်','ဇူ','သြ','စက်','အောက်','နို','ဒီ'];
+  document.getElementById('clockTime').textContent = d.toTimeString().slice(0,5);
+  document.getElementById('clockDate').textContent = `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+  document.getElementById('todayLabel').textContent = `${days[d.getDay()]}နေ့ · ${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`;
+}
+setInterval(tickClock, 1000*30);
+
+async function init(){
+  await initRealtime();
+  populatePersonSelects();
+  setupSeg('w-type'); setupSeg('s-type'); setupSeg('d-type');
+  const t = todayStr();
+  document.getElementById('w-date').value = t;
+  document.getElementById('e-date').value = t;
+  document.getElementById('s-date').value = t;
+  document.getElementById('d-date').value = t;
+  tickClock();
+  renderAll();
+}
+init();
+</script>
+</body>
+</html>
